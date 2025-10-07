@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using STG.Domain.Entities;
-using STG.Domain.ValueObjects;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
@@ -11,7 +10,7 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
     {
         builder.ToTable("Assignments");
 
-        builder.HasKey("GroupCode", "Teacher", "Room", "Slot_Day", "Slot_Block");
+        builder.HasKey(a => a.Id); // PK simple
 
         builder.Property(a => a.GroupCode).IsRequired().HasMaxLength(10);
         builder.Property(a => a.Subject).IsRequired().HasMaxLength(100);
@@ -19,10 +18,8 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
         builder.Property(a => a.Room).IsRequired().HasMaxLength(50);
         builder.Property(a => a.Blocks).IsRequired();
 
-        // ----- Mapeo de TimeSlot como owned type (mejor en dos pasos) -----
         var slot = builder.OwnsOne(a => a.Slot);
 
-        // Si tu TimeSlot es record struct con propiedades Day (enum) y Block (int)
         slot.Property(s => s.Day)
             .HasConversion<int>()
             .HasColumnName("Slot_Day")
@@ -32,9 +29,9 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
             .HasColumnName("Slot_Block")
             .IsRequired();
 
-        // Si quieres crear índice opcional:
-        // builder.HasIndex("Slot_Day", "Slot_Block");
-
-        // Si Assignment pertenece a Timetable y quieres cascade delete, se configura en TimetableConfiguration
+        // Índice SOLO dentro del owned type (opcional)
+        slot.HasIndex(s => new { s.Day, s.Block })
+            .HasDatabaseName("IX_Assignments_Slot");
     }
 }
+

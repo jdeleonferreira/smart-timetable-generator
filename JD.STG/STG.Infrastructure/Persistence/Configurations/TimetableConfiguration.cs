@@ -13,14 +13,16 @@ public class TimetableConfiguration : IEntityTypeConfiguration<Timetable>
 
         builder.Property(t => t.Year).IsRequired();
 
-        // WeekConfig no se persistirá como tabla; se serializa como JSON
-        builder.OwnsOne(t => t.WeekConfig, wc =>
-        {
-            wc.ToJson();
-        });
+        builder.OwnsOne(t => t.WeekConfig);
 
-        builder.HasMany<Assignment>("_assignments")
-               .WithOne()
-               .OnDelete(DeleteBehavior.Cascade);
+        builder
+            .HasMany(t => t.Assignments)
+            .WithOne()
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Indica el backing field y el modo de acceso
+        var nav = builder.Metadata.FindNavigation(nameof(Timetable.Assignments));
+        nav!.SetField("_assignments");
+        nav.SetPropertyAccessMode(PropertyAccessMode.Field);
     }
 }
