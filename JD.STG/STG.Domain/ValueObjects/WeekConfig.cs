@@ -12,6 +12,8 @@ public sealed class WeekConfig
     public int BlocksPerDay { get; }
     public int BlockLengthMinutes { get; }
 
+    WeekConfig() { }
+
     public WeekConfig(IEnumerable<DayOfWeek> days, int blocksPerDay, int blockLengthMinutes)
     {
         var list = days?.Distinct().OrderBy(d => d).ToList() ?? throw new ArgumentNullException(nameof(days));

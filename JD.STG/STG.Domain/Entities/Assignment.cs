@@ -1,8 +1,9 @@
-﻿using STG.Domain.ValueObjects;
+﻿using STG.Domain.Entities.Base;
+using STG.Domain.ValueObjects;
 
 namespace STG.Domain.Entities;
 
-public sealed class Assignment
+public sealed class Assignment: Entity
 {
     public string GroupCode { get; }     // e.g., "6A"
     public string Subject { get; }       // e.g., "Matemáticas"
@@ -10,6 +11,8 @@ public sealed class Assignment
     public string Room { get; }          // e.g., "A101"
     public TimeSlot Slot { get; }        // Día/Block
     public int Blocks { get; }           // 1 si simple; 2 si doble
+
+    public Assignment() { }
 
     public Assignment(string groupCode, string subject, string teacher, string room, TimeSlot slot, int blocks = 1)
     {
