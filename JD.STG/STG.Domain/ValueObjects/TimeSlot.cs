@@ -1,16 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace STG.Domain.ValueObjects;
 
-namespace STG.Domain.ValueObjects;
-
-public readonly record struct TimeSlot(DayOfWeek Day, int Block)
+public class TimeSlot
 {
-    public static TimeSlot Of(DayOfWeek day, int block)
+    public DayOfWeek Day { get; private set; }
+    public int Block { get; private set; }
+
+    private TimeSlot() { }
+
+    public TimeSlot(DayOfWeek day, int block)
     {
         if (block < 1) throw new ArgumentOutOfRangeException(nameof(block), "Block must be >= 1");
-        return new TimeSlot(day, block);
+        Day = day;
+        Block = block;
     }
+
+    public static TimeSlot Of(DayOfWeek day, int block) => new(day, block);
 }
