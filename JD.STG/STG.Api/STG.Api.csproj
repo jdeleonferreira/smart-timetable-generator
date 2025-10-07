@@ -8,10 +8,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\JD.STG.ServiceDefaults\JD.STG.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\STG.Infrastructure\STG.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
