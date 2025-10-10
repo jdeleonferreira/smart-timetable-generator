@@ -11,7 +11,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
-        services.AddDbContext<StgDbContext>(options =>
+        //Reduce overhead en alta concurrencia.
+        services.AddDbContextPool<StgDbContext>(options =>
             options.UseSqlite(config.GetConnectionString("Default")));
 
 

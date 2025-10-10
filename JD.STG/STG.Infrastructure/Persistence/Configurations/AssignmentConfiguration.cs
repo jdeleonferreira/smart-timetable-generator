@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using STG.Domain.Entities;
+using STG.Domain.ValueObjects;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
@@ -9,8 +10,7 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
     public void Configure(EntityTypeBuilder<Assignment> builder)
     {
         builder.ToTable("Assignments");
-
-        builder.HasKey(a => a.Id); // PK simple
+        builder.HasKey(a => a.Id);
 
         builder.Property(a => a.GroupCode).IsRequired().HasMaxLength(10);
         builder.Property(a => a.Subject).IsRequired().HasMaxLength(100);
@@ -18,20 +18,21 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
         builder.Property(a => a.Room).IsRequired().HasMaxLength(50);
         builder.Property(a => a.Blocks).IsRequired();
 
-        var slot = builder.OwnsOne(a => a.Slot);
+        // ----- OWNED: TimeSlot REQUERIDO -----
+        builder.OwnsOne(a => a.Slot, slot =>
+        {
+            slot.WithOwner(); // explícito
+            slot.Property(s => s.Day)
+                .HasConversion<int>()
+                .HasColumnName("Slot_Day")
+                .IsRequired();
 
-        slot.Property(s => s.Day)
-            .HasConversion<int>()
-            .HasColumnName("Slot_Day")
-            .IsRequired();
+            slot.Property(s => s.Block)
+                .HasColumnName("Slot_Block")
+                .IsRequired();
+        });
 
-        slot.Property(s => s.Block)
-            .HasColumnName("Slot_Block")
-            .IsRequired();
-
-        // Índice SOLO dentro del owned type (opcional)
-        slot.HasIndex(s => new { s.Day, s.Block })
-            .HasDatabaseName("IX_Assignments_Slot");
+        // MUY IMPORTANTE: marca la navegación como REQUERIDA
+        builder.Navigation(a => a.Slot).IsRequired();
     }
 }
-

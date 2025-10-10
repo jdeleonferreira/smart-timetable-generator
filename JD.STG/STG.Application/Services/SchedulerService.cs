@@ -31,23 +31,27 @@ public class SchedulerService
 
     public async Task<Timetable> GenerateAsync(int year, WeekConfig week, CancellationToken ct = default)
     {
-        // Reusar si existe
         var existing = await _timetables.GetByYearAsync(year, ct);
         if (existing is not null) return existing;
 
         var tt = new Timetable(year, week);
         var lines = await _curriculum.GetByYearAsync(year, ct);
-        var groups = await _groups.GetAllAsync(ct);
-        var rooms = await _rooms.GetAllAsync(ct);
+        var groupsAll = await _groups.GetAllAsync(ct);
+        var roomsAll = await _rooms.GetAllAsync(ct);
         var teachers = await _teachers.GetAllAsync(ct);
 
-        // Map rápido de grupos por grado (asumimos 1 grupo por label, MVP)
-        var groupsByGrade = groups.GroupBy(g => g.Grade).ToDictionary(g => g.Key, g => g.ToList());
+        var groupsByGrade = groupsAll.GroupBy(g => g.Grade).ToDictionary(g => g.Key, g => g.ToList());
 
-        // Todos los slots de la semana
+        // Slots de la semana
         var weekSlots = week.Days
             .SelectMany(d => Enumerable.Range(1, week.BlocksPerDay).Select(b => TimeSlot.Of(d, b)))
             .ToList();
+
+        // ------------------ NUEVO: ocupación ------------------
+        var occTeacher = new HashSet<(string teacher, DayOfWeek day, int block)>();
+        var occGroup = new HashSet<(string group, DayOfWeek day, int block)>();
+        var occRoom = new HashSet<(string room, DayOfWeek day, int block)>();
+        // ------------------------------------------------------
 
         foreach (var line in lines)
         {
@@ -55,19 +59,27 @@ public class SchedulerService
 
             foreach (var group in gradeGroups)
             {
-                int remaining = line.WeeklyBlocks;
-
-                // Docente: el primero que dice poder esa materia (MVP)
                 var teacher = teachers.FirstOrDefault(t => t.Subjects.Contains(line.Subject));
                 if (teacher is null) continue;
 
-                // Sala: primera con capacidad >= grupo.size (MVP)
-                var room = rooms.FirstOrDefault(r => r.Capacity >= group.Size) ?? rooms.First();
+                var room = roomsAll.FirstOrDefault(r => r.Capacity >= group.Size);
+                if (room is null) continue;
 
-                // Asignar greedy
+                var remaining = line.WeeklyBlocks;
+
+                // intenta colocar "remaining" bloques para ese grupo
                 foreach (var slot in weekSlots)
                 {
                     if (remaining <= 0) break;
+
+                    var keyT = (teacher.Name, slot.Day, slot.Block);
+                    var keyG = (group.Code, slot.Day, slot.Block);
+                    var keyR = (room.Name, slot.Day, slot.Block);
+
+                    // Evitar llamada que chocará
+                    if (occTeacher.Contains(keyT)) continue;
+                    if (occGroup.Contains(keyG)) continue;
+                    if (occRoom.Contains(keyR)) continue;
 
                     var a = new Assignment(
                         groupCode: group.Code,
@@ -75,19 +87,18 @@ public class SchedulerService
                         teacher: teacher.Name,
                         room: room.Name,
                         slot: slot,
-                        blocks: 1 // MVP: 1 bloque. Puedes usar Subject.MustBeDouble más adelante
+                        blocks: 1
                     );
 
-                    try
-                    {
-                        tt.AddAssignment(a);
-                        remaining--;
-                    }
-                    catch
-                    {
-                        // conflicto -> prueba siguiente slot
-                        continue;
-                    }
+                    // Si llegamos aquí, no hay choques "conocidos"
+                    tt.AddAssignment(a);
+
+                    // Marcar ocupación
+                    occTeacher.Add(keyT);
+                    occGroup.Add(keyG);
+                    occRoom.Add(keyR);
+
+                    remaining--;
                 }
             }
         }
@@ -96,4 +107,5 @@ public class SchedulerService
         await _uow.SaveChangesAsync(ct);
         return tt;
     }
+
 }
