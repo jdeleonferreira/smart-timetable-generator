@@ -4,9 +4,9 @@ using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
-public class CurriculumLineConfiguration : IEntityTypeConfiguration<CurriculumLine>
+public class CurriculumLineConfiguration : IEntityTypeConfiguration<StudyPlanEntry>
 {
-    public void Configure(EntityTypeBuilder<CurriculumLine> builder)
+    public void Configure(EntityTypeBuilder<StudyPlanEntry> builder)
     {
         builder.ToTable("CurriculumLines");
         builder.HasKey(c => c.Id);

@@ -15,7 +15,7 @@ public class CurriculumController : ControllerBase
     {
         if (lines.Count == 0) return BadRequest(new ProblemDetails { Title = "Empty payload" });
 
-        var entities = lines.Select(l => new CurriculumLine(l.Year, l.Grade, l.Subject, l.WeeklyBlocks));
+        var entities = lines.Select(l => new StudyPlanEntry(l.Year, l.Grade, l.Subject, l.WeeklyBlocks));
         await _service.UploadAsync(entities, ct);
         return Ok();
     }

@@ -2,19 +2,73 @@
 
 namespace STG.Domain.Entities;
 
-public class Subject : Entity
+/// <summary>
+/// Represents an academic subject taught in the school curriculum.
+/// Example: Mathematics, English, Biology, Physics.
+/// </summary>
+public sealed class Subject : Entity
 {
-    public string Name { get; private set; } = default!;
-    public bool NeedsLab { get; private set; }  // p.ej. Ciencias con laboratorio
-    public bool MustBeDouble { get; private set; } // si requiere bloques consecutivos
+    /// <summary>
+    /// Human-friendly subject name.
+    /// Example: "Mathematics", "Biology".
+    /// </summary>
+    public string Name { get; private set; } = string.Empty;
 
-    private Subject() { }
+    /// <summary>
+    /// Indicates whether the subject requires laboratory resources.
+    /// Example: true for Physics or Chemistry.
+    /// </summary>
+    public bool RequiresLab { get; private set; }
 
-    public Subject(string name, bool needsLab = false, bool mustBeDouble = false)
+    /// <summary>
+    /// Indicates whether the subject must be scheduled in double consecutive periods.
+    /// Example: true for lab-based subjects or extended classes.
+    /// </summary>
+    public bool RequiresDoublePeriod { get; private set; }
+
+    private Subject() { } // EF Core constructor
+
+    /// <summary>
+    /// Creates a new subject definition.
+    /// </summary>
+    /// <param name="name">Subject name.</param>
+    /// <param name="requiresLab">Whether a lab is required.</param>
+    /// <param name="requiresDoublePeriod">Whether it must occupy consecutive periods.</param>
+    public Subject(string name, bool requiresLab = false, bool requiresDoublePeriod = false)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Subject name is required.");
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Subject name is required.", nameof(name));
+
+        SetCreated();
+        Id = Guid.NewGuid();
+
         Name = name.Trim();
-        NeedsLab = needsLab;
-        MustBeDouble = mustBeDouble;
+        RequiresLab = requiresLab;
+        RequiresDoublePeriod = requiresDoublePeriod;
     }
+
+    /// <summary>
+    /// Renames the subject.
+    /// </summary>
+    public void Rename(string newName, string? modifiedBy = null)
+    {
+        if (string.IsNullOrWhiteSpace(newName))
+            throw new ArgumentException("Subject name is required.", nameof(newName));
+
+        Name = newName.Trim();
+        SetModified(modifiedBy);
+    }
+
+    /// <summary>
+    /// Updates the subject configuration.
+    /// </summary>
+    public void UpdateProperties(bool requiresLab, bool requiresDoublePeriod, string? modifiedBy = null)
+    {
+        RequiresLab = requiresLab;
+        RequiresDoublePeriod = requiresDoublePeriod;
+        SetModified(modifiedBy);
+    }
+
+    public override string ToString() =>
+        $"{Name} (Lab: {RequiresLab}, Double: {RequiresDoublePeriod})";
 }

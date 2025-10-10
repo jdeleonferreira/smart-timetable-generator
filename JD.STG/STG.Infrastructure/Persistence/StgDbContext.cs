@@ -12,7 +12,7 @@ public class StgDbContext : DbContext
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<Group> Groups => Set<Group>();
-    public DbSet<CurriculumLine> CurriculumLines => Set<CurriculumLine>();
+    public DbSet<StudyPlanEntry> CurriculumLines => Set<StudyPlanEntry>();
     public DbSet<Timetable> Timetables => Set<Timetable>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
 

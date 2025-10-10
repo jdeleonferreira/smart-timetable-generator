@@ -14,7 +14,7 @@ public class CurriculumService
         _uow = uow;
     }
 
-    public async Task UploadAsync(IEnumerable<CurriculumLine> items, CancellationToken ct = default)
+    public async Task UploadAsync(IEnumerable<StudyPlanEntry> items, CancellationToken ct = default)
     {
         var list = items.ToList();
         if (list.Count == 0) return;
@@ -25,12 +25,12 @@ public class CurriculumService
         await _uow.SaveChangesAsync(ct);
     }
 
-    public Task<IReadOnlyList<CurriculumLine>> GetByYearAsync(int year, CancellationToken ct = default)
+    public Task<IReadOnlyList<StudyPlanEntry>> GetByYearAsync(int year, CancellationToken ct = default)
         => _curriculum.GetByYearAsync(year, ct);
 
-    public Task<IReadOnlyList<CurriculumLine>> GetByGradeAsync(int year, string grade, CancellationToken ct = default)
+    public Task<IReadOnlyList<StudyPlanEntry>> GetByGradeAsync(int year, string grade, CancellationToken ct = default)
         => _curriculum.GetByGradeAsync(year, grade, ct);
 
-    public Task<IReadOnlyList<CurriculumLine>> GetBySubjectAsync(int year, string subject, CancellationToken ct = default)
+    public Task<IReadOnlyList<StudyPlanEntry>> GetBySubjectAsync(int year, string subject, CancellationToken ct = default)
         => _curriculum.GetBySubjectAsync(year, subject, ct);
 }

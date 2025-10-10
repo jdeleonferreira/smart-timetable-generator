@@ -16,15 +16,15 @@ public class CurriculumRepository : ICurriculumRepository
         _db.CurriculumLines.RemoveRange(lines);
     }
 
-    public Task AddRangeAsync(IEnumerable<CurriculumLine> items, CancellationToken ct)
+    public Task AddRangeAsync(IEnumerable<StudyPlanEntry> items, CancellationToken ct)
         => _db.CurriculumLines.AddRangeAsync(items, ct);
 
-    public async Task<IReadOnlyList<CurriculumLine>> GetByYearAsync(int year, CancellationToken ct)
+    public async Task<IReadOnlyList<StudyPlanEntry>> GetByYearAsync(int year, CancellationToken ct)
         => await _db.CurriculumLines.Where(c => c.Year == year).AsNoTracking().ToListAsync(ct);
 
-    public async Task<IReadOnlyList<CurriculumLine>> GetByGradeAsync(int year, string grade, CancellationToken ct)
+    public async Task<IReadOnlyList<StudyPlanEntry>> GetByGradeAsync(int year, string grade, CancellationToken ct)
         => await _db.CurriculumLines.Where(c => c.Year == year && c.Grade == grade).AsNoTracking().ToListAsync(ct);
 
-    public async Task<IReadOnlyList<CurriculumLine>> GetBySubjectAsync(int year, string subject, CancellationToken ct)
+    public async Task<IReadOnlyList<StudyPlanEntry>> GetBySubjectAsync(int year, string subject, CancellationToken ct)
         => await _db.CurriculumLines.Where(c => c.Year == year && c.Subject == subject).AsNoTracking().ToListAsync(ct);
 }

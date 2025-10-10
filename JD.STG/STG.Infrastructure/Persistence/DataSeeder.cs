@@ -162,10 +162,10 @@ public static class DataSeeder
         // =========================================================
 
         // Helper para crear líneas
-        List<CurriculumLine> MakeIH(int year, string grade, Dictionary<string, int> map)
-            => map.Select(kv => new CurriculumLine(year, grade, kv.Key, kv.Value)).ToList();
+        List<StudyPlanEntry> MakeIH(int year, string grade, Dictionary<string, int> map)
+            => map.Select(kv => new StudyPlanEntry(year, grade, kv.Key, kv.Value)).ToList();
 
-        var ih = new List<CurriculumLine>();
+        var ih = new List<StudyPlanEntry>();
 
         // Preescolar (enfoque básico + artística + EF)
         var ihPre = new Dictionary<string, int>
