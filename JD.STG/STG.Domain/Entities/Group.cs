@@ -34,6 +34,8 @@ public sealed class Group : Entity
     /// </summary>
     public string Code => $"{GradeName}{Label}";
 
+    public const int MaxNameLength = 5; // e.g., "10A"
+
     private Group() { } // EF Core
 
     /// <summary>

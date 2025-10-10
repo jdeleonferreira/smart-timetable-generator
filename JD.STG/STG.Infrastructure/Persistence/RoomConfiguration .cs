@@ -4,18 +4,15 @@ using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
-public sealed class GradeConfiguration : IEntityTypeConfiguration<Grade>
+public sealed class RoomConfiguration : IEntityTypeConfiguration<Room>
 {
-    public void Configure(EntityTypeBuilder<Grade> b)
+    public void Configure(EntityTypeBuilder<Room> b)
     {
-        b.ToTable("Grades");
+        b.ToTable("Rooms");
         b.HasKey(x => x.Id);
 
-        b.Property(x => x.Name)
-            .IsRequired()
-            .HasMaxLength(Grade.MaxNameLength);
-
-        b.Property(x => x.Order).HasDefaultValue((byte)0);
+        b.Property(x => x.Name).IsRequired().HasMaxLength(Room.MaxNameLength);
+        b.Property(x => x.Tags).HasMaxLength(Room.MaxTagsLength);
 
         b.HasIndex(x => new { x.SchoolYearId, x.Name }).IsUnique();
 
@@ -25,4 +22,3 @@ public sealed class GradeConfiguration : IEntityTypeConfiguration<Grade>
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
-

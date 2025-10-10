@@ -4,11 +4,7 @@ namespace STG.Application.Abstractions.Persistence;
 
 public interface IRoomRepository
 {
-    Task<Room?> GetByIdAsync(Guid id, CancellationToken ct);
-    Task<Room?> GetByNameAsync(string name, CancellationToken ct);
-    Task<IReadOnlyList<Room>> GetAllAsync(CancellationToken ct);
-    Task<IReadOnlyList<Room>> GetWithTagAsync(string tag, CancellationToken ct);
-    Task AddAsync(Room room, CancellationToken ct);
-    Task AddRangeAsync(IEnumerable<Room> rooms, CancellationToken ct);
-    void Remove(Room room);
+    Task<Room?> GetAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<Room>> GetBySchoolYearAsync(Guid schoolYearId, CancellationToken ct = default);
+    Task AddAsync(Room entity, CancellationToken ct = default);
 }

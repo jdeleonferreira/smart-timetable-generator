@@ -1,4 +1,4 @@
-﻿using STG.Application.Interfaces;
+﻿using STG.Application.Abstractions.Persistence;
 using STG.Domain.Entities;
 
 namespace STG.Application.Services;

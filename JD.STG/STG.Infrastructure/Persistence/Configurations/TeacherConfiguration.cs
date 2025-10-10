@@ -1,31 +1,28 @@
-﻿// Configurations/TeacherConfiguration.cs
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using System.Text.Json;
 using STG.Domain.Entities;
+
+namespace STG.Infrastructure.Persistence.Configurations;
 
 public sealed class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
 {
     public void Configure(EntityTypeBuilder<Teacher> b)
     {
-        b.ToTable("Teacher");
+        b.ToTable("Teachers");
         b.HasKey(x => x.Id);
 
-        b.Property(x => x.Name).HasMaxLength(128).IsRequired();
+        b.Property(x => x.FullName)
+            .IsRequired()
+            .HasMaxLength(Teacher.MaxNameLength);
 
-        // JSON converter para _subjects
-        var converter = new ValueConverter<IReadOnlyCollection<string>, string>(
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-            v => JsonSerializer.Deserialize<IReadOnlyCollection<string>>(v, (JsonSerializerOptions?)null) ?? Array.Empty<string>());
+        b.Property(x => x.MaxDailyPeriods);
+        b.Property(x => x.Tags).HasMaxLength(Teacher.MaxTagsLength);
 
-        b.Property(typeof(IReadOnlyCollection<string>), "_subjects")
-         .HasColumnName("SubjectsJson")
-         .HasConversion(converter)
-         .HasColumnType("nvarchar(max)")
-         .IsRequired();
+        b.HasIndex(x => new { x.SchoolYearId, x.FullName });
 
-        b.Ignore(x => x.Subjects); // expuesto como IReadOnly desde la entidad
-        b.HasIndex(x => x.Name).IsUnique(false);
+        b.HasOne<SchoolYear>()
+            .WithMany()
+            .HasForeignKey(x => x.SchoolYearId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
