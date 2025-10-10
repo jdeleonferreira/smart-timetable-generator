@@ -1,6 +1,6 @@
 ﻿using STG.Domain.Entities;
 
-namespace STG.Application.Interfaces;
+namespace STG.Application.Abstractions.Persistence;
 
 public interface ICurriculumRepository
 {

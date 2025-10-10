@@ -1,106 +1,61 @@
-﻿using STG.Domain.Entities.Base;
-using STG.Domain.ValueObjects;
+﻿// FILE: STG.Domain/Entities/Timetable.cs
+using STG.Domain.Entities.Base;
 
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Aggregate root representing the scheduled timetable for a school year.
-/// It holds period placements for assignments and enforces hard constraints:
-/// - No group can have two classes in the same (day, period).
-/// - No teacher can teach two classes in the same (day, period).
+/// Aggregate representing the scheduled timetable for a Group in a SchoolYear.
+/// Domain rules:
+/// 1) Belongs to (SchoolYearId, GroupId) and owns multiple entries.
+/// 2) Must not contain duplicate (DayOfWeek, PeriodNumber) cells.
+/// 3) Overlap checks for teachers are typically enforced at service/policy level,
+///    but helper detection methods are provided.
 /// </summary>
-public sealed class Timetable : AggregateRoot
+public sealed class Timetable : Entity
 {
+    public Guid SchoolYearId { get; private set; }
+    public Guid GroupId { get; private set; }
+
+    public double? Score { get; private set; }
+
+    public IReadOnlyCollection<TimetableEntry> Entries => _entries.AsReadOnly();
     private readonly List<TimetableEntry> _entries = new();
 
-    /// <summary>
-    /// Academic year this timetable belongs to.
-    /// </summary>
-    public Guid SchoolYearId { get; private set; }
+    private Timetable() { } // EF
 
-    /// <summary>
-    /// Read-only view of all scheduled entries.
-    /// </summary>
-    public IReadOnlyCollection<TimetableEntry> Entries => _entries.AsReadOnly();
-
-    private Timetable() : base(createdBy: null) { } // EF Core
-
-    /// <summary>
-    /// Creates a new timetable for the specified school year.
-    /// </summary>
-    public Timetable(Guid schoolYearId, string? createdBy = null) : base(createdBy)
+    public Timetable(Guid schoolYearId, Guid groupId)
     {
-        if (schoolYearId == Guid.Empty)
-            throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
+        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
+        if (groupId == Guid.Empty) throw new ArgumentException("GroupId is required.", nameof(groupId));
 
         Id = Guid.NewGuid();
         SchoolYearId = schoolYearId;
+        GroupId = groupId;
+        SetCreated();
     }
 
-    /// <summary>
-    /// Attempts to add a new timetable entry, enforcing hard constraints.
-    /// Throws <see cref="InvalidOperationException"/> if any rule is violated.
-    /// </summary>
-    public void AddEntry(TimetableEntry entry, string? modifiedBy = null)
+    /// <summary>Adds an entry ensuring no duplicate cell exists in this timetable.</summary>
+    public Timetable AddEntry(TimetableEntry entry, string? modifiedBy = null)
     {
         if (entry is null) throw new ArgumentNullException(nameof(entry));
-        if (entry.SchoolYearId != SchoolYearId)
-            throw new InvalidOperationException("Entry belongs to a different SchoolYear.");
-
-        // 1) Group overlap: one group per (day, period)
-        if (_entries.Any(e =>
-            e.GroupId == entry.GroupId &&
-            e.Slot.Day == entry.Slot.Day &&
-            e.Slot.Block == entry.Slot.Block))
-        {
-            throw new InvalidOperationException("Group period already assigned.");
-        }
-
-        // 2) Teacher overlap: one teacher per (day, period)
-        if (_entries.Any(e =>
-            e.TeacherId == entry.TeacherId &&
-            e.Slot.Day == entry.Slot.Day &&
-            e.Slot.Block == entry.Slot.Block))
-        {
-            throw new InvalidOperationException("Teacher overlap.");
-        }
+        if (entry.TimetableId != Id) throw new InvalidOperationException("Entry must target this Timetable.");
+        if (_entries.Any(e => e.DayOfWeek == entry.DayOfWeek && e.PeriodNumber == entry.PeriodNumber))
+            throw new InvalidOperationException("Duplicate (DayOfWeek, PeriodNumber) in timetable.");
 
         _entries.Add(entry);
-        MarkModified(modifiedBy);
+        SetModified(modifiedBy);
+        return this;
     }
 
-    /// <summary>
-    /// Removes an entry from the timetable, if present.
-    /// </summary>
-    public bool RemoveEntry(Guid entryId, string? modifiedBy = null)
+    /// <summary>Sets the computed score.</summary>
+    public Timetable SetScore(double? score, string? modifiedBy = null)
     {
-        var removed = _entries.RemoveAll(e => e.Id == entryId) > 0;
-        if (removed) MarkModified(modifiedBy);
-        return removed;
+        Score = score;
+        SetModified(modifiedBy);
+        return this;
     }
 
-    /// <summary>
-    /// Checks if a given slot is already taken by either the group or the teacher.
-    /// Returns a short diagnostic message if blocked; otherwise null.
-    /// </summary>
-    public string? GetBlockingReason(Guid groupId, Guid teacherId, TimeSlot slot)
-    {
-        if (_entries.Any(e => e.GroupId == groupId && e.Slot == slot))
-            return "Group period already assigned.";
-        if (_entries.Any(e => e.TeacherId == teacherId && e.Slot == slot))
-            return "Teacher overlap.";
-        return null;
-    }
-
-    /// <summary>
-    /// Clears all scheduled entries. Use with care (admin operation).
-    /// </summary>
-    public void Clear(string? modifiedBy = null)
-    {
-        if (_entries.Count == 0) return;
-        _entries.Clear();
-        MarkModified(modifiedBy);
-    }
-
-    public override string ToString() => $"Timetable[{SchoolYearId}] Entries={_entries.Count}";
+    /// <summary>Detects if the teacher is already scheduled in this cell.</summary>
+    public bool HasTeacherAt(DayOfWeek day, int period, Guid teacherId)
+        => _entries.Any(e => e.DayOfWeek == day && e.PeriodNumber == period && e.AssignmentTeacherId == teacherId);
 }

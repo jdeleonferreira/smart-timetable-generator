@@ -1,28 +1,53 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Configurations/TimetableConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using STG.Domain.Entities;
+using STG.Domain.ValueObjects;
 
-namespace STG.Infrastructure.Persistence.Configurations;
-
-public class TimetableConfiguration : IEntityTypeConfiguration<Timetable>
+public sealed class TimetableConfiguration : IEntityTypeConfiguration<Timetable>
 {
-    public void Configure(EntityTypeBuilder<Timetable> builder)
+    public void Configure(EntityTypeBuilder<Timetable> b)
     {
-        builder.ToTable("Timetables");
-        builder.HasKey(t => t.Id);
+        b.ToTable("Timetable");
+        b.HasKey(x => x.Id);
 
-        builder.Property(t => t.Year).IsRequired();
+        b.Property(x => x.SchoolYearId).IsRequired();
 
-        builder.OwnsOne(t => t.WeekConfig);
+        b.HasMany<TimetableEntry>()
+         .WithOne()
+         .HasForeignKey(e => e.TimetableId)
+         .OnDelete(DeleteBehavior.Cascade);
+    }
+}
 
-        builder
-            .HasMany(t => t.Assignments)
-            .WithOne()
-            .OnDelete(DeleteBehavior.Cascade);
+// Configurations/TimetableEntryConfiguration.cs
+public sealed class TimetableEntryConfiguration : IEntityTypeConfiguration<TimetableEntry>
+{
+    public void Configure(EntityTypeBuilder<TimetableEntry> e)
+    {
+        e.ToTable("TimetableEntry");
+        e.HasKey(x => x.Id);
 
-        // Indica el backing field y el modo de acceso
-        var nav = builder.Metadata.FindNavigation(nameof(Timetable.Assignments));
-        nav!.SetField("_assignments");
-        nav.SetPropertyAccessMode(PropertyAccessMode.Field);
+        e.Property(x => x.TimetableId).IsRequired();
+        e.Property(x => x.SchoolYearId).IsRequired();
+        e.Property(x => x.AssignmentId).IsRequired();
+        e.Property(x => x.GroupId).IsRequired();
+        e.Property(x => x.SubjectId).IsRequired();
+        e.Property(x => x.TeacherId).IsRequired();
+
+        // TimeSlot como owned type
+        e.OwnsOne(x => x.Slot, ow =>
+        {
+            ow.Property(p => p.Day).HasColumnName("Day").IsRequired();
+            ow.Property(p => p.Block).HasColumnName("Block").IsRequired();
+        });
+
+        // Índices para las reglas duras
+        e.HasIndex(x => new { x.GroupId, x.Slot.Day, x.Slot.Block })
+         .IsUnique()
+         .HasDatabaseName("IX_TimetableEntry_Group_Day_Block");
+
+        e.HasIndex(x => new { x.TeacherId, x.Slot.Day, x.Slot.Block })
+         .HasDatabaseName("IX_TimetableEntry_Teacher_Day_Block");
     }
 }

@@ -1,26 +1,21 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Configurations/GroupConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using STG.Domain.Entities;
 
-
-namespace STG.Infrastructure.Persistence.Configurations;
-
-public class GroupConfiguration : IEntityTypeConfiguration<Group>
+public sealed class GroupConfiguration : IEntityTypeConfiguration<Group>
 {
-    public void Configure(EntityTypeBuilder<Group> builder)
+    public void Configure(EntityTypeBuilder<Group> b)
     {
-        builder.ToTable("Groups");
-        builder.HasKey(g => g.Id);
+        b.ToTable("Group");
+        b.HasKey(x => x.Id);
 
-        builder.Property(g => g.Grade)
-               .IsRequired()
-               .HasMaxLength(10);
+        b.Property(x => x.GradeId).IsRequired();
+        b.Property(x => x.GradeName).HasMaxLength(32).IsRequired();
+        b.Property(x => x.Label).HasMaxLength(8).IsRequired();
+        b.Property(x => x.Size).IsRequired();
 
-        builder.Property(g => g.Label)
-               .IsRequired()
-               .HasMaxLength(10);
-
-        builder.Property(g => g.Size)
-               .IsRequired();
+        b.HasIndex(x => new { x.GradeId, x.Label }).IsUnique();
+        b.HasIndex(x => new { x.GradeName, x.Label });
     }
 }

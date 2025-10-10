@@ -1,21 +1,19 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Configurations/SubjectConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using STG.Domain.Entities;
 
-namespace STG.Infrastructure.Persistence.Configurations;
-
-public class SubjectConfiguration : IEntityTypeConfiguration<Subject>
+public sealed class SubjectConfiguration : IEntityTypeConfiguration<Subject>
 {
-    public void Configure(EntityTypeBuilder<Subject> builder)
+    public void Configure(EntityTypeBuilder<Subject> b)
     {
-        builder.ToTable("Subjects");
-        builder.HasKey(s => s.Id);
-        builder.Property(s => s.Name)
-               .IsRequired()
-               .HasMaxLength(100);
-        builder.Property(s => s.NeedsLab)
-               .IsRequired();
-        builder.Property(s => s.MustBeDouble)
-               .IsRequired();
+        b.ToTable("Subject");
+        b.HasKey(x => x.Id);
+
+        b.Property(x => x.Name).HasMaxLength(128).IsRequired();
+        b.Property(x => x.RequiresLab).IsRequired();
+        b.Property(x => x.RequiresDoublePeriod).IsRequired();
+
+        b.HasIndex(x => x.Name).IsUnique();
     }
 }

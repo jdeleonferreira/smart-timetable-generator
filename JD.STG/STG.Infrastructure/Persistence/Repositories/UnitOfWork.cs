@@ -1,11 +1,11 @@
-﻿using STG.Application.Interfaces;
-using STG.Infrastructure.Persistence;
+﻿using STG.Application.Abstractions.Persistence;
 
-namespace STG.Infrastructure.Repositories;
+namespace STG.Infrastructure.Persistence.Repositories;
 
-public class UnitOfWork : IUnitOfWork
+public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly StgDbContext _db;
+
     public UnitOfWork(StgDbContext db) => _db = db;
 
     public Task<int> SaveChangesAsync(CancellationToken ct = default)

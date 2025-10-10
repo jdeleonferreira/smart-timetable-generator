@@ -1,65 +1,65 @@
 ﻿using STG.Domain.Entities.Base;
-using STG.Domain.ValueObjects;
 
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// A single scheduled unit (one period) that places an Assignment
-/// at a specific (day, period) within the timetable grid.
+/// Scheduled cell for a specific (DayOfWeek, PeriodNumber) pointing to an Assignment.
+/// Domain rules:
+/// 1) Must belong to a Timetable (immutable) and target an Assignment (immutable).
+/// 2) (TimetableId, DayOfWeek, PeriodNumber) must be unique (persistence).
+/// 3) PeriodNumber is 1..20.
 /// </summary>
 public sealed class TimetableEntry : Entity
 {
-    /// <summary>Parent timetable.</summary>
     public Guid TimetableId { get; private set; }
 
-    /// <summary>Academic year (must match the parent timetable's SchoolYearId).</summary>
-    public Guid SchoolYearId { get; private set; }
+    public DayOfWeek DayOfWeek { get; private set; }
+    public int PeriodNumber { get; private set; } // 1..20
 
-    /// <summary>The assignment being placed (demand source).</summary>
     public Guid AssignmentId { get; private set; }
+    public Guid AssignmentTeacherId { get; private set; } // denormalized for quick checks
+    public Guid AssignmentSubjectId { get; private set; } // denormalized for reporting
 
-    /// <summary>Redundant denormalized references for fast checks and indexing.</summary>
-    public Guid GroupId { get; private set; }
-    public Guid SubjectId { get; private set; }
-    public Guid TeacherId { get; private set; }
+    public Guid? RoomId { get; private set; } // optional
+    public string? ReasonJson { get; private set; } // optional lightweight explanation
 
-    /// <summary>Placement in the week grid.</summary>
-    public TimeSlot Slot { get; private set; }
+    private TimetableEntry() { } // EF
 
-    private TimetableEntry() { } // EF Core
-
-    /// <summary>
-    /// Creates a new scheduled entry (one period) for an assignment.
-    /// </summary>
-    public TimetableEntry(
-        Guid timetableId,
-        Guid schoolYearId,
-        Guid assignmentId,
-        Guid groupId,
-        Guid subjectId,
-        Guid teacherId,
-        TimeSlot slot)
+    public TimetableEntry(Guid timetableId, DayOfWeek dayOfWeek, int periodNumber,
+                          Guid assignmentId, Guid assignmentTeacherId, Guid assignmentSubjectId,
+                          Guid? roomId = null, string? reasonJson = null)
     {
         if (timetableId == Guid.Empty) throw new ArgumentException("TimetableId is required.", nameof(timetableId));
-        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
         if (assignmentId == Guid.Empty) throw new ArgumentException("AssignmentId is required.", nameof(assignmentId));
-        if (groupId == Guid.Empty) throw new ArgumentException("GroupId is required.", nameof(groupId));
-        if (subjectId == Guid.Empty) throw new ArgumentException("SubjectId is required.", nameof(subjectId));
-        if (teacherId == Guid.Empty) throw new ArgumentException("TeacherId is required.", nameof(teacherId));
-        if (slot is null) throw new ArgumentNullException(nameof(slot));
+        if (assignmentTeacherId == Guid.Empty) throw new ArgumentException("AssignmentTeacherId is required.", nameof(assignmentTeacherId));
+        if (assignmentSubjectId == Guid.Empty) throw new ArgumentException("AssignmentSubjectId is required.", nameof(assignmentSubjectId));
+        if (periodNumber < 1 || periodNumber > 20) throw new ArgumentOutOfRangeException(nameof(periodNumber), "PeriodNumber must be between 1 and 20.");
 
-        SetCreated();
         Id = Guid.NewGuid();
-
         TimetableId = timetableId;
-        SchoolYearId = schoolYearId;
+        DayOfWeek = dayOfWeek;
+        PeriodNumber = periodNumber;
         AssignmentId = assignmentId;
-        GroupId = groupId;
-        SubjectId = subjectId;
-        TeacherId = teacherId;
-        Slot = slot;
+        AssignmentTeacherId = assignmentTeacherId;
+        AssignmentSubjectId = assignmentSubjectId;
+        RoomId = roomId;
+        ReasonJson = string.IsNullOrWhiteSpace(reasonJson) ? null : reasonJson.Trim();
+        SetCreated();
     }
 
-    public override string ToString() =>
-        $"Entry[{Id}] A={AssignmentId} G={GroupId} T={TeacherId} S={SubjectId} @ {Slot}";
+    public TimetableEntry SetRoom(Guid? roomId, string? modifiedBy = null)
+    {
+        RoomId = roomId;
+        SetModified(modifiedBy);
+        return this;
+    }
+
+    public TimetableEntry SetReason(string? json, string? modifiedBy = null)
+    {
+        ReasonJson = string.IsNullOrWhiteSpace(json) ? null : json.Trim();
+        SetModified(modifiedBy);
+        return this;
+    }
+
+    public override string ToString() => $"{DayOfWeek} P{PeriodNumber} • A:{AssignmentId}";
 }

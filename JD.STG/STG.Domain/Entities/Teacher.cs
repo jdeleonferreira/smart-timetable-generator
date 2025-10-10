@@ -3,95 +3,82 @@
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Represents a teacher within the academic domain.
-/// Each teacher may be qualified to teach one or more subjects.
+/// Teacher available for assignments within a SchoolYear.
+/// Domain rules:
+/// 1) Must belong to a SchoolYear (immutable).
+/// 2) FullName is required, trimmed, <= 128 chars.
+/// 3) MaxDailyPeriods, when set, is 1..20 and overrides global config.
 /// </summary>
 public sealed class Teacher : Entity
 {
-    /// <summary>
-    /// Teacher’s full name.
-    /// </summary>
-    public string Name { get; private set; } = string.Empty;
+    public const int MaxNameLength = 128;
+    public const int MaxTagsLength = 256;
 
-    /// <summary>
-    /// Collection of subject names (normalized) that the teacher can teach.
-    /// In a future iteration this may reference <see cref="Subject"/> entities by ID.
-    /// </summary>
-    private readonly HashSet<string> _subjects = new(StringComparer.OrdinalIgnoreCase);
+    public Guid SchoolYearId { get; private set; }
 
-    /// <summary>
-    /// Exposes the subjects as a read-only collection.
-    /// </summary>
-    public IReadOnlyCollection<string> Subjects => _subjects;
+    public string FullName { get; private set; } = string.Empty;
+    public int? MaxDailyPeriods { get; private set; } // null = use SchedulingConfig
+    public string? Tags { get; private set; } // optional short metadata (e.g., specialties)
 
-    private Teacher() { } // EF Core constructor
+    private Teacher() { } // EF
 
-    /// <summary>
-    /// Creates a new teacher profile with an optional list of teachable subjects.
-    /// </summary>
-    /// <param name="name">Teacher's full name.</param>
-    /// <param name="subjects">Optional list of subject names the teacher can teach.</param>
-    public Teacher(string name, IEnumerable<string>? subjects = null)
+    public Teacher(Guid schoolYearId, string fullName, int? maxDailyPeriods = null, string? tags = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Teacher name is required.", nameof(name));
+        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
 
-        SetCreated();
+        fullName = NormalizeName(fullName);
+        if (string.IsNullOrWhiteSpace(fullName)) throw new ArgumentException("FullName is required.", nameof(fullName));
+        if (fullName.Length > MaxNameLength) throw new ArgumentException($"FullName must be <= {MaxNameLength} chars.", nameof(fullName));
+
+        ValidateMaxDaily(maxDailyPeriods);
+        if (tags is { Length: > MaxTagsLength }) throw new ArgumentException($"Tags must be <= {MaxTagsLength} chars.", nameof(tags));
+
         Id = Guid.NewGuid();
-
-        Name = name.Trim();
-
-        if (subjects is not null)
-        {
-            foreach (var subject in subjects)
-                AddSubject(subject);
-        }
+        SchoolYearId = schoolYearId;
+        FullName = fullName;
+        MaxDailyPeriods = maxDailyPeriods;
+        Tags = string.IsNullOrWhiteSpace(tags) ? null : tags.Trim();
+        SetCreated();
     }
 
-    /// <summary>
-    /// Adds a subject qualification for this teacher.
-    /// Returns true if the subject was successfully added.
-    /// </summary>
-    public bool AddSubject(string subject, string? modifiedBy = null)
+    public Teacher Rename(string newFullName, string? modifiedBy = null)
     {
-        if (string.IsNullOrWhiteSpace(subject))
-            return false;
-
-        var added = _subjects.Add(subject.Trim());
-        if (added)
-            SetModified(modifiedBy);
-
-        return added;
-    }
-
-    /// <summary>
-    /// Removes a subject qualification, if it exists.
-    /// Returns true if the subject was removed.
-    /// </summary>
-    public bool RemoveSubject(string subject, string? modifiedBy = null)
-    {
-        if (string.IsNullOrWhiteSpace(subject))
-            return false;
-
-        var removed = _subjects.Remove(subject.Trim());
-        if (removed)
-            SetModified(modifiedBy);
-
-        return removed;
-    }
-
-    /// <summary>
-    /// Changes the teacher's display name.
-    /// </summary>
-    public void Rename(string newName, string? modifiedBy = null)
-    {
-        if (string.IsNullOrWhiteSpace(newName))
-            throw new ArgumentException("Name is required.", nameof(newName));
-
-        Name = newName.Trim();
+        newFullName = NormalizeName(newFullName);
+        if (string.IsNullOrWhiteSpace(newFullName)) throw new ArgumentException("FullName is required.", nameof(newFullName));
+        if (newFullName.Length > MaxNameLength) throw new ArgumentException($"FullName must be <= {MaxNameLength} chars.", nameof(newFullName));
+        FullName = newFullName;
         SetModified(modifiedBy);
+        return this;
     }
 
-    public override string ToString() =>
-        $"{Name} ({_subjects.Count} subjects)";
+    public Teacher SetMaxDailyPeriods(int? value, string? modifiedBy = null)
+    {
+        ValidateMaxDaily(value);
+        MaxDailyPeriods = value;
+        SetModified(modifiedBy);
+        return this;
+    }
+
+    public Teacher SetTags(string? tags, string? modifiedBy = null)
+    {
+        if (tags is { Length: > MaxTagsLength }) throw new ArgumentException($"Tags must be <= {MaxTagsLength} chars.", nameof(tags));
+        Tags = string.IsNullOrWhiteSpace(tags) ? null : tags.Trim();
+        SetModified(modifiedBy);
+        return this;
+    }
+
+    public override string ToString() => FullName;
+
+    private static string NormalizeName(string value)
+    {
+        var t = value.Trim();
+        while (t.Contains("  ")) t = t.Replace("  ", " ");
+        return t;
+    }
+
+    private static void ValidateMaxDaily(int? value)
+    {
+        if (value.HasValue && (value.Value < 1 || value.Value > 20))
+            throw new ArgumentOutOfRangeException(nameof(value), "MaxDailyPeriods must be between 1 and 20.");
+    }
 }

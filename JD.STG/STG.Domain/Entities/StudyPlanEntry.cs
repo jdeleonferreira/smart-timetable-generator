@@ -3,37 +3,44 @@
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Represents a study plan entry (planned weekly hours per grade and subject).
-/// Serves as a reference for validating teaching assignments (IH consistency).
+/// Study plan line that ties a <see cref="Subject"/> to weekly hours (IH) within a <see cref="StudyPlan"/>.
+/// Domain rules:
+/// 1) Must belong to a StudyPlan (immutable).
+/// 2) Must reference a Subject (immutable).
+/// 3) WeeklyHours is 1..50 (reasonable guardrail).
+/// 4) (StudyPlanId, SubjectId) must be unique (enforced in persistence).
 /// </summary>
 public sealed class StudyPlanEntry : Entity
 {
-    public Guid SchoolYearId { get; private set; }
-    public Guid GradeId { get; private set; }
+    public Guid StudyPlanId { get; private set; }
     public Guid SubjectId { get; private set; }
 
-    /// <summary>
-    /// Planned weekly instruction hours (IH) for this grade–subject combination.
-    /// </summary>
-    public byte WeeklyHours { get; private set; }
+    public int WeeklyHours { get; private set; } // IH per week
 
-    private StudyPlanEntry() { } // EF Core
+    private StudyPlanEntry() { } // EF
 
-    public StudyPlanEntry(Guid schoolYearId, Guid gradeId, Guid subjectId, byte weeklyHours)
+    /// <summary>Factory constructor that enforces invariants.</summary>
+    public StudyPlanEntry(Guid studyPlanId, Guid subjectId, int weeklyHours)
     {
-        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.");
-        if (gradeId == Guid.Empty) throw new ArgumentException("GradeId is required.");
-        if (subjectId == Guid.Empty) throw new ArgumentException("SubjectId is required.");
-        if (weeklyHours is 0 or > 10) throw new ArgumentOutOfRangeException(nameof(weeklyHours));
+        if (studyPlanId == Guid.Empty) throw new ArgumentException("StudyPlanId is required.", nameof(studyPlanId));
+        if (subjectId == Guid.Empty) throw new ArgumentException("SubjectId is required.", nameof(subjectId));
+        if (weeklyHours < 1 || weeklyHours > 50) throw new ArgumentOutOfRangeException(nameof(weeklyHours), "WeeklyHours must be between 1 and 50.");
 
-        SetCreated();
         Id = Guid.NewGuid();
-        SchoolYearId = schoolYearId;
-        GradeId = gradeId;
+        StudyPlanId = studyPlanId;
         SubjectId = subjectId;
         WeeklyHours = weeklyHours;
+        SetCreated();
     }
 
-    public override string ToString() =>
-        $"StudyPlanEntry [Grade={GradeId}, Subject={SubjectId}, IH={WeeklyHours}]";
+    /// <summary>Updates weekly hours (1..50).</summary>
+    public StudyPlanEntry SetWeeklyHours(int weeklyHours, string? modifiedBy = null)
+    {
+        if (weeklyHours < 1 || weeklyHours > 50) throw new ArgumentOutOfRangeException(nameof(weeklyHours), "WeeklyHours must be between 1 and 50.");
+        WeeklyHours = weeklyHours;
+        SetModified(modifiedBy);
+        return this;
+    }
+
+    public override string ToString() => $"Subject:{SubjectId} IH:{WeeklyHours}";
 }

@@ -1,4 +1,6 @@
-﻿using STG.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using STG.Domain.Entities;
+using STG.Domain.ValueObjects;
 
 namespace STG.Infrastructure.Persistence;
 
@@ -6,270 +8,245 @@ public static class DataSeeder
 {
     public static async Task SeedAsync(StgDbContext db, CancellationToken ct = default)
     {
-        // Evita reseed si ya existe data
-        if (db.Subjects.Any()) return;
-
-        // =========================================================
-        // 1) SUBJECTS (marcando necesidades especiales)
-        // =========================================================
-        var subjects = new List<Subject>
+        // 1) SchoolYear 2025
+        var year2025 = await db.SchoolYears.FirstOrDefaultAsync(x => x.Year == 2025, ct);
+        if (year2025 is null)
         {
-            // Lenguas
-            new("Lengua castellana"),
-            new("Inglés"),
-            new("Pre-escritura"),
-            new("Plan Lector"),
-
-            // Matemáticas (MVP: consolidamos en "Matemáticas" para lower grades,
-            // y añadimos ramas para upper grades)
-            new("Matemáticas"),
-            new("Aritmética"),
-            new("Geometría"),
-            new("Álgebra"),
-            new("Trigonometría"),
-            new("Cálculo"),
-            new("Pre-matemáticas"),
-
-            // Ciencias
-            new("Ciencias naturales"),
-            new("Biología", needsLab: true),
-            new("Química", needsLab: true),
-            new("Física", needsLab: true),
-
-            // Sociales y humanidades
-            new("Sociales"),
-            new("Historia"),
-            new("Geografía"),
-            new("Competencia ciudadana"),
-            new("Filosofía"),
-            new("Ciencias económicas y políticas"),
-
-            // Ética / Religión / Convivencia
-            new("Ética y valores"),
-            new("Ética empresarial"),
-            new("Religión"),
-            new("Cívica y Urbanidad (acompañamiento)"),
-
-            // Artes / Música / Educación Física
-            new("Artística"),
-            new("Música"),
-            new("Educación física y deportes"),
-
-            // Tecnología / Informática / Proyecto / Orientación
-            // Si tu Subject soporta NeedsComputerRoom, cámbialo por esa prop.:
-            // new("Informática", needsComputerRoom: true)
-            new("Informática", needsLab: true),
-            new("Emprendimiento"),
-            new("Contabilidad Básica"),
-            new("Contabilidad Comercial"),
-            new("Orientación profesional"),
-            new("Proyecto de Investigación")
-        };
-
-        await db.Subjects.AddRangeAsync(subjects, ct);
-        await db.SaveChangesAsync(ct);
-
-        // =========================================================
-        // 2) TEACHERS (cobertura suficiente)
-        // =========================================================
-        var teachers = new List<Teacher>
-        {
-            new("Ana Gómez",        new[] { "Lengua castellana", "Plan Lector", "Pre-escritura" }),
-            new("Carlos Ruiz",      new[] { "Matemáticas", "Aritmética", "Geometría", "Álgebra" }),
-            new("María Torres",     new[] { "Inglés" }),
-            new("Luis Rojas",       new[] { "Ciencias naturales", "Biología", "Química" }),
-            new("Sofía Herrera",    new[] { "Física", "Matemáticas" }),
-            new("Jorge Martínez",   new[] { "Sociales", "Historia", "Geografía", "Competencia ciudadana" }),
-            new("Camila Torres",    new[] { "Ética y valores", "Religión", "Cívica y Urbanidad (acompañamiento)" }),
-            new("Paula Salazar",    new[] { "Artística", "Música" }),
-            new("Ricardo López",    new[] { "Educación física y deportes" }),
-            new("Laura Pérez",      new[] { "Informática" }),
-            new("Julio Gómez",      new[] { "Filosofía", "Ciencias económicas y políticas", "Ética empresarial" }),
-            new("Andrea Núñez",     new[] { "Emprendimiento", "Proyecto de Investigación", "Orientación profesional" }),
-            new("Diana Romero",     new[] { "Contabilidad Básica", "Contabilidad Comercial" }),
-        };
-        await db.Teachers.AddRangeAsync(teachers, ct);
-        await db.SaveChangesAsync(ct);
-
-        // =========================================================
-        // 3) ROOMS (aulas por grado + labs + informática + deportes)
-        // Tags: "aula", "lab", "computer", "deportes"
-        // =========================================================
-        var rooms = new List<Room>
-        {
-            // Aulas de Preescolar – Primaria
-            new("PRE-A", 28, new[] { "aula" }),
-            new("PRE-B", 28, new[] { "aula" }),
-            new("G1-A",  30, new[] { "aula" }),
-            new("G1-B",  30, new[] { "aula" }),
-            new("G2-A",  32, new[] { "aula" }),
-            new("G2-B",  32, new[] { "aula" }),
-            new("G3-A",  32, new[] { "aula" }),
-            new("G3-B",  32, new[] { "aula" }),
-            new("G4-A",  34, new[] { "aula" }),
-            new("G4-B",  34, new[] { "aula" }),
-            new("G5-A",  34, new[] { "aula" }),
-            new("G5-B",  34, new[] { "aula" }),
-
-            // Aulas de Secundaria
-            new("G6-A",  35, new[] { "aula" }),
-            new("G6-B",  35, new[] { "aula" }),
-            new("G7-A",  35, new[] { "aula" }),
-            new("G7-B",  35, new[] { "aula" }),
-            new("G8-A",  35, new[] { "aula" }),
-            new("G8-B",  35, new[] { "aula" }),
-            new("G9-A",  36, new[] { "aula" }),
-            new("G9-B",  36, new[] { "aula" }),
-            new("G10-A", 36, new[] { "aula" }),
-            new("G10-B", 36, new[] { "aula" }),
-            new("G11-A", 36, new[] { "aula" }),
-            new("G11-B", 36, new[] { "aula" }),
-
-            // Especiales
-            new("LAB-CIENCIAS", 28, new[] { "lab" }),
-            new("LAB-INFO",     28, new[] { "computer" }),  // si tu scheduler busca "computer" para Informática
-            new("CANCHA",       60, new[] { "deportes" }),
-            new("AULA-MUSICA",  25, new[] { "aula" })
-        };
-        await db.Rooms.AddRangeAsync(rooms, ct);
-        await db.SaveChangesAsync(ct);
-
-        // =========================================================
-        // 4) GROUPS (Pre, 1..11; secciones A y B)
-        // =========================================================
-        var grades = new List<string> { "Pre" };
-        grades.AddRange(Enumerable.Range(1, 11).Select(i => i.ToString()));
-
-        var groupList = new List<Group>();
-        var rnd = new Random(42);
-
-        foreach (var gr in grades)
-        {
-            // Tamaño aleatorio razonable por grupo
-            var sizeA = gr == "Pre" ? rnd.Next(24, 30) : rnd.Next(28, 36);
-            var sizeB = gr == "Pre" ? rnd.Next(22, 28) : rnd.Next(26, 34);
-
-            groupList.Add(new Group(gr, "A", sizeA));
-            groupList.Add(new Group(gr, "B", sizeB));
-        }
-        await db.Groups.AddRangeAsync(groupList, ct);
-        await db.SaveChangesAsync(ct);
-
-        // =========================================================
-        // 5) CURRICULUM (IH por grado)
-        // Malla razonable (MVP) basada en prácticas comunes.
-        // Puedes ajustar IH según tu tabla real.
-        // =========================================================
-
-        // Helper para crear líneas
-        List<StudyPlanEntry> MakeIH(int year, string grade, Dictionary<string, int> map)
-            => map.Select(kv => new StudyPlanEntry(year, grade, kv.Key, kv.Value)).ToList();
-
-        var ih = new List<StudyPlanEntry>();
-
-        // Preescolar (enfoque básico + artística + EF)
-        var ihPre = new Dictionary<string, int>
-        {
-            ["Pre-escritura"] = 4,
-            ["Lengua castellana"] = 3,
-            ["Matemáticas"] = 3,
-            ["Inglés"] = 1,
-            ["Artística"] = 1,
-            ["Música"] = 1,
-            ["Educación física y deportes"] = 1,
-            ["Plan Lector"] = 1,
-            ["Cívica y Urbanidad (acompañamiento)"] = 1
-        };
-        ih.AddRange(MakeIH(2025, "Pre", ihPre));
-
-        // Primaria (1°–5°)
-        Dictionary<string, int> BasePrimaria(int grado) => new()
-        {
-            ["Lengua castellana"] = 5,
-            ["Matemáticas"] = 5,
-            ["Inglés"] = grado >= 3 ? 3 : 2,
-            ["Ciencias naturales"] = grado >= 3 ? 3 : 2,
-            ["Sociales"] = grado >= 3 ? 2 : 1,
-            ["Artística"] = 1,
-            ["Música"] = grado >= 3 ? 1 : 0,
-            ["Ética y valores"] = 1,
-            ["Religión"] = 1,
-            ["Educación física y deportes"] = 2,
-            ["Plan Lector"] = 1
-        };
-
-        for (int g = 1; g <= 5; g++)
-        {
-            var map = BasePrimaria(g).Where(kv => kv.Value > 0).ToDictionary(k => k.Key, v => v.Value);
-            ih.AddRange(MakeIH(2025, g.ToString(), map));
+            year2025 = new SchoolYear(
+                year: 2025,
+                week: new WeekConfig(
+                    days: new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday },
+                    blocksPerDay: 8,
+                    blockLengthMinutes: 45
+                )
+            );
+            db.SchoolYears.Add(year2025);
+            await db.SaveChangesAsync(ct);
         }
 
-        // Secundaria baja (6°–9°)
-        Dictionary<string, int> BaseSecundariaBaja(int grado) => new()
+        // 2) Subjects (all)
+        var subjectNames = new[]
         {
-            ["Lengua castellana"] = 5,
-            ["Inglés"] = 3,
-            ["Aritmética"] = grado == 6 ? 3 : 0,
-            ["Geometría"] = grado >= 7 ? 2 : 0,
-            ["Álgebra"] = grado >= 8 ? 2 : 0,
-            ["Ciencias naturales"] = grado == 6 ? 3 : 0,
-            ["Biología"] = grado == 7 ? 2 : 0,
-            ["Química"] = grado == 8 ? 2 : 0,
-            ["Física"] = grado == 9 ? 2 : 0,
-            ["Sociales"] = 2,
-            ["Historia"] = grado >= 8 ? 2 : 0,
-            ["Geografía"] = grado >= 8 ? 2 : 0,
-            ["Competencia ciudadana"] = grado >= 7 ? 1 : 0,
-            ["Informática"] = 2,
-            ["Artística"] = 1,
-            ["Música"] = 1,
-            ["Ética y valores"] = 1,
-            ["Religión"] = 1,
-            ["Educación física y deportes"] = 2,
-            ["Plan Lector"] = 1
+            "Mathematics","Language Arts","English","Natural Sciences","Social Studies",
+            "Physics","Chemistry","Biology","Technology","Computer Science",
+            "Arts","Music","Physical Education","Religion","Ethics & Citizenship"
         };
 
-        for (int g = 6; g <= 9; g++)
-        {
-            var map = BaseSecundariaBaja(g).Where(kv => kv.Value > 0).ToDictionary(k => k.Key, v => v.Value);
-            ih.AddRange(MakeIH(2025, g.ToString(), map));
-        }
+        var subjects = await EnsureSubjectsAsync(db, subjectNames, ct);
 
-        // Media (10°–11°)
-        Dictionary<string, int> BaseMedia(int grado) => new()
+        // 3) Grades (1..11)
+        var grades = await EnsureGradesAsync(db, schoolYearId: year2025.Id, names: Enumerable.Range(1, 11).Select(n => n.ToString()), ct);
+
+        // 4) Groups (only 6A, 6B)
+        var grade6 = grades.Single(g => g.Name == "6");
+        var group6A = await EnsureGroupAsync(db, grade6, "A", size: 30, ct);
+        var group6B = await EnsureGroupAsync(db, grade6, "B", size: 28, ct);
+
+        // 5) Study Plan (IH) for all Grades × Subjects — MVP defaults
+        //    Adjust these hours to match the 2011 plan when you load it.
+        var defaultHours = DefaultHoursBySubject();
+        await EnsureStudyPlanAsync(db, year2025.Id, grades, subjects, defaultHours, ct);
+
+        // 6) Teachers
+        var math = subjects["Mathematics"].Id;
+        var lang = subjects["Language Arts"].Id;
+        var engl = subjects["English"].Id;
+        var sci = subjects["Natural Sciences"].Id;
+        var soc = subjects["Social Studies"].Id;
+        var pe = subjects["Physical Education"].Id;
+        var arts = subjects["Arts"].Id;
+        var tech = subjects["Technology"].Id;
+
+        var teachers = await EnsureTeachersAsync(db, new[]
         {
-            ["Lengua castellana"] = 4,
-            ["Inglés"] = 4,
-            ["Álgebra"] = 2,
-            ["Trigonometría"] = grado == 10 ? 2 : 0,
-            ["Cálculo"] = grado == 11 ? 2 : 0,
-            ["Biología"] = 0, // puedes subir a 2 si tu colegio lo exige
-            ["Química"] = 2,
-            ["Física"] = 2,
-            ["Filosofía"] = 2,
-            ["Ciencias económicas y políticas"] = grado >= 10 ? 1 : 0,
-            ["Ética y valores"] = 1,
-            ["Ética empresarial"] = grado == 11 ? 1 : 0,
-            ["Religión"] = 1,
-            ["Informática"] = 2,
-            ["Emprendimiento"] = grado >= 10 ? 2 : 0,
-            ["Contabilidad Básica"] = grado == 10 ? 2 : 0,
-            ["Contabilidad Comercial"] = grado == 11 ? 2 : 0,
-            ["Proyecto de Investigación"] = 2,
-            ["Educación física y deportes"] = 2,
-            ["Artística"] = 1,
-            ["Música"] = 1,
-            ["Competencia ciudadana"] = 1,
-            ["Plan Lector"] = 1
+            (Name: "Ana García",      Subjects: new[]{ "Mathematics" }),
+            (Name: "Carlos Mendoza",  Subjects: new[]{ "Language Arts", "Social Studies" }),
+            (Name: "Laura Smith",     Subjects: new[]{ "English" }),
+            (Name: "Julián Ríos",     Subjects: new[]{ "Natural Sciences", "Technology" }),
+            (Name: "Paula Gómez",     Subjects: new[]{ "Arts" }),
+            (Name: "Diego Pérez",     Subjects: new[]{ "Physical Education" }),
+        }, ct);
+
+        // 7) Assignments for 6A and 6B (respecting IH)
+        await EnsureAssignmentsForGroupAsync(db, year2025.Id, group6A, subjects, teachers, defaultHours, ct);
+        await EnsureAssignmentsForGroupAsync(db, year2025.Id, group6B, subjects, teachers, defaultHours, ct);
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    // ----------------------
+    // Helpers
+    // ----------------------
+
+    private static async Task<Dictionary<string, Subject>> EnsureSubjectsAsync(StgDbContext db, IEnumerable<string> names, CancellationToken ct)
+    {
+        var existing = await db.Subjects.ToListAsync(ct);
+        var map = existing.ToDictionary(s => s.Name, s => s, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var n in names)
+        {
+            if (!map.ContainsKey(n))
+            {
+                var subj = new Subject(n,
+                    requiresLab: n is "Physics" or "Chemistry" or "Biology",
+                    requiresDoublePeriod: n is "Physics" or "Chemistry" or "Biology");
+                db.Subjects.Add(subj);
+                map[n] = subj;
+            }
+        }
+        await db.SaveChangesAsync(ct);
+        return map;
+    }
+
+    private static async Task<List<Grade>> EnsureGradesAsync(StgDbContext db, Guid schoolYearId, IEnumerable<string> names, CancellationToken ct)
+    {
+        var result = new List<Grade>();
+        foreach (var (name, order) in names.Select((n, i) => (n, (byte)(i + 1))))
+        {
+            var g = await db.Grades.FirstOrDefaultAsync(x => x.SchoolYearId == schoolYearId && x.Name == name, ct);
+            if (g is null)
+            {
+                g = new Grade(schoolYearId, name, order);
+                db.Grades.Add(g);
+                await db.SaveChangesAsync(ct);
+            }
+            result.Add(g);
+        }
+        return result;
+    }
+
+    private static async Task<Group> EnsureGroupAsync(StgDbContext db, Grade grade, string label, ushort size, CancellationToken ct)
+    {
+        var g = await db.Groups.FirstOrDefaultAsync(x => x.GradeId == grade.Id && x.Label == label, ct);
+        if (g is null)
+        {
+            g = new Group(grade.Id, grade.Name, label, size);
+            db.Groups.Add(g);
+            await db.SaveChangesAsync(ct);
+        }
+        return g;
+    }
+
+    private static Dictionary<string, byte> DefaultHoursBySubject() => new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Reasonable MVP defaults, adjust with the official plan later
+        ["Mathematics"] = 5,
+        ["Language Arts"] = 5,
+        ["English"] = 3,
+        ["Natural Sciences"] = 3,
+        ["Social Studies"] = 3,
+        ["Physics"] = 2,
+        ["Chemistry"] = 2,
+        ["Biology"] = 2,
+        ["Technology"] = 2,
+        ["Computer Science"] = 2,
+        ["Arts"] = 2,
+        ["Music"] = 1,
+        ["Physical Education"] = 2,
+        ["Religion"] = 1,
+        ["Ethics & Citizenship"] = 1,
+    };
+
+    private static async Task EnsureStudyPlanAsync(
+        StgDbContext db,
+        Guid schoolYearId,
+        IEnumerable<Grade> grades,
+        Dictionary<string, Subject> subjects,
+        Dictionary<string, byte> defaultHours,
+        CancellationToken ct)
+    {
+        foreach (var grade in grades)
+        {
+            foreach (var kvp in defaultHours)
+            {
+                // Use defaults for every grade. Replace later with per-grade hours if needed.
+                var subj = subjects[kvp.Key];
+                var hours = kvp.Value;
+
+                var exists = await db.StudyPlanEntries
+                    .AnyAsync(x => x.SchoolYearId == schoolYearId && x.GradeId == grade.Id && x.SubjectId == subj.Id, ct);
+
+                if (!exists)
+                {
+                    db.StudyPlanEntries.Add(new StudyPlanEntry(schoolYearId, grade.Id, subj.Id, hours));
+                }
+            }
+        }
+        await db.SaveChangesAsync(ct);
+    }
+
+    private static async Task<Dictionary<string, Teacher>> EnsureTeachersAsync(
+        StgDbContext db,
+        IEnumerable<(string Name, IEnumerable<string> Subjects)> teachers,
+        CancellationToken ct)
+    {
+        var map = new Dictionary<string, Teacher>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (name, subjects) in teachers)
+        {
+            var t = await db.Teachers.FirstOrDefaultAsync(x => x.Name == name, ct);
+            if (t is null)
+            {
+                t = new Teacher(name, subjects);
+                db.Teachers.Add(t);
+                await db.SaveChangesAsync(ct);
+            }
+            else
+            {
+                foreach (var s in subjects) t.AddSubject(s);
+                await db.SaveChangesAsync(ct);
+            }
+            map[name] = t;
+        }
+        return map;
+    }
+
+    private static async Task EnsureAssignmentsForGroupAsync(
+        StgDbContext db,
+        Guid schoolYearId,
+        Group group,
+        Dictionary<string, Subject> subjects,
+        Dictionary<string, Teacher> teachers,
+        Dictionary<string, byte> defaultHours,
+        CancellationToken ct)
+    {
+        // Simple assignment plan for demo: map subjects to teachers by specialty
+        var mapping = new (string Subject, string Teacher)[]
+        {
+            ("Mathematics",        "Ana García"),
+            ("Language Arts",      "Carlos Mendoza"),
+            ("English",            "Laura Smith"),
+            ("Natural Sciences",   "Julián Ríos"),
+            ("Social Studies",     "Carlos Mendoza"),
+            ("Technology",         "Julián Ríos"),
+            ("Arts",               "Paula Gómez"),
+            ("Physical Education", "Diego Pérez"),
         };
 
-        foreach (var g in new[] { 10, 11 })
+        foreach (var (subjName, teacherName) in mapping)
         {
-            var map = BaseMedia(g).Where(kv => kv.Value > 0).ToDictionary(k => k.Key, v => v.Value);
-            ih.AddRange(MakeIH(2025, g.ToString(), map));
+            if (!subjects.TryGetValue(subjName, out var s) || !teachers.TryGetValue(teacherName, out var t))
+                continue; // skip if not present
+
+            var ih = defaultHours.TryGetValue(subjName, out var hours) ? hours : (byte)2;
+
+            var exists = await db.Assignments.AnyAsync(a =>
+                a.SchoolYearId == schoolYearId &&
+                a.GroupId == group.Id &&
+                a.SubjectId == s.Id, ct);
+
+            if (!exists)
+            {
+                db.Assignments.Add(new Assignment(
+                    schoolYearId: schoolYearId,
+                    groupId: group.Id,
+                    subjectId: s.Id,
+                    teacherId: t.Id,
+                    weeklyHours: ih
+                ));
+            }
         }
 
-        await db.CurriculumLines.AddRangeAsync(ih, ct);
         await db.SaveChangesAsync(ct);
     }
 }

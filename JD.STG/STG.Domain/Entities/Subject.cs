@@ -3,72 +3,83 @@
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Represents an academic subject taught in the school curriculum.
-/// Example: Mathematics, English, Biology, Physics.
+/// Academic subject that can be assigned to groups/teachers within a SchoolYear.
+/// Domain rules:
+/// 1) Must belong to a SchoolYear (immutable reference).
+/// 2) Name is required, trimmed, <= 64 chars; unique per SchoolYear.
+/// 3) Optional short Code (<= 16 chars) is uppercased; unique per SchoolYear when provided.
 /// </summary>
 public sealed class Subject : Entity
 {
-    /// <summary>
-    /// Human-friendly subject name.
-    /// Example: "Mathematics", "Biology".
-    /// </summary>
+    public const int MaxNameLength = 64;
+    public const int MaxCodeLength = 16;
+
+    public Guid SchoolYearId { get; private set; }
+
     public string Name { get; private set; } = string.Empty;
+    public string? Code { get; private set; } // optional, uppercased
+    public string? Area { get; private set; } // optional taxonomy (kept small in persistence)
 
-    /// <summary>
-    /// Indicates whether the subject requires laboratory resources.
-    /// Example: true for Physics or Chemistry.
-    /// </summary>
-    public bool RequiresLab { get; private set; }
+    private Subject() { } // EF
 
-    /// <summary>
-    /// Indicates whether the subject must be scheduled in double consecutive periods.
-    /// Example: true for lab-based subjects or extended classes.
-    /// </summary>
-    public bool RequiresDoublePeriod { get; private set; }
-
-    private Subject() { } // EF Core constructor
-
-    /// <summary>
-    /// Creates a new subject definition.
-    /// </summary>
-    /// <param name="name">Subject name.</param>
-    /// <param name="requiresLab">Whether a lab is required.</param>
-    /// <param name="requiresDoublePeriod">Whether it must occupy consecutive periods.</param>
-    public Subject(string name, bool requiresLab = false, bool requiresDoublePeriod = false)
+    /// <summary>Factory constructor that enforces invariants.</summary>
+    public Subject(Guid schoolYearId, string name, string? code = null, string? area = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Subject name is required.", nameof(name));
+        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
 
-        SetCreated();
+        name = NormalizeName(name);
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required.", nameof(name));
+        if (name.Length > MaxNameLength) throw new ArgumentException($"Name must be <= {MaxNameLength} chars.", nameof(name));
+
+        code = NormalizeCode(code);
+        if (code is { Length: > MaxCodeLength }) throw new ArgumentException($"Code must be <= {MaxCodeLength} chars.", nameof(code));
+
         Id = Guid.NewGuid();
-
-        Name = name.Trim();
-        RequiresLab = requiresLab;
-        RequiresDoublePeriod = requiresDoublePeriod;
+        SchoolYearId = schoolYearId;
+        Name = name;
+        Code = code;
+        Area = string.IsNullOrWhiteSpace(area) ? null : area.Trim();
+        SetCreated();
     }
 
-    /// <summary>
-    /// Renames the subject.
-    /// </summary>
-    public void Rename(string newName, string? modifiedBy = null)
+    /// <summary>Renames the subject.</summary>
+    public Subject Rename(string newName, string? modifiedBy = null)
     {
-        if (string.IsNullOrWhiteSpace(newName))
-            throw new ArgumentException("Subject name is required.", nameof(newName));
-
-        Name = newName.Trim();
+        newName = NormalizeName(newName);
+        if (string.IsNullOrWhiteSpace(newName)) throw new ArgumentException("Name is required.", nameof(newName));
+        if (newName.Length > MaxNameLength) throw new ArgumentException($"Name must be <= {MaxNameLength} chars.", nameof(newName));
+        Name = newName;
         SetModified(modifiedBy);
+        return this;
     }
 
-    /// <summary>
-    /// Updates the subject configuration.
-    /// </summary>
-    public void UpdateProperties(bool requiresLab, bool requiresDoublePeriod, string? modifiedBy = null)
+    /// <summary>Sets or clears the short code (uppercased).</summary>
+    public Subject SetCode(string? code, string? modifiedBy = null)
     {
-        RequiresLab = requiresLab;
-        RequiresDoublePeriod = requiresDoublePeriod;
+        code = NormalizeCode(code);
+        if (code is { Length: > MaxCodeLength }) throw new ArgumentException($"Code must be <= {MaxCodeLength} chars.", nameof(code));
+        Code = code;
         SetModified(modifiedBy);
+        return this;
     }
 
-    public override string ToString() =>
-        $"{Name} (Lab: {RequiresLab}, Double: {RequiresDoublePeriod})";
+    /// <summary>Sets or clears the taxonomy area.</summary>
+    public Subject SetArea(string? area, string? modifiedBy = null)
+    {
+        Area = string.IsNullOrWhiteSpace(area) ? null : area.Trim();
+        SetModified(modifiedBy);
+        return this;
+    }
+
+    public override string ToString() => Code is null ? Name : $"{Code} - {Name}";
+
+    private static string NormalizeName(string value)
+    {
+        var t = value.Trim();
+        while (t.Contains("  ")) t = t.Replace("  ", " ");
+        return t;
+    }
+
+    private static string? NormalizeCode(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToUpperInvariant();
 }

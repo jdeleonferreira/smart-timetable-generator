@@ -1,9 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using STG.Application.Interfaces;
-using STG.Infrastructure.Persistence;
-using STG.Infrastructure.Repositories;
+using STG.Application.Abstractions.Persistence;
+using STG.Infrastructure.Persistence.Repositories;
 
 namespace STG.Infrastructure;
 
@@ -16,13 +15,13 @@ public static class DependencyInjection
             options.UseSqlite(config.GetConnectionString("Default")));
 
 
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<ICurriculumRepository, CurriculumRepository>();
+        services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+        services.AddScoped<IGroupRepository, GroupRepository>();
+        services.AddScoped<IStudyPlanRepository, StudyPlanRepository>();
         services.AddScoped<ISubjectRepository, SubjectRepository>();
         services.AddScoped<ITeacherRepository, TeacherRepository>();
-        services.AddScoped<IRoomRepository, RoomRepository>();
-        services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<ITimetableRepository, TimetableRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 
         return services;

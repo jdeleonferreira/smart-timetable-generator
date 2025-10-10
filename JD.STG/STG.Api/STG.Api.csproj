@@ -22,4 +22,9 @@
     <ProjectReference Include="..\STG.Infrastructure\STG.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Mappers\" />
+    <Folder Include="Validations\" />
+  </ItemGroup>
+
 </Project>
