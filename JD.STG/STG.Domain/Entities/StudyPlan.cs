@@ -3,57 +3,74 @@
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Study plan header for a (SchoolYear, Grade) scope, e.g., "Plan 2011".
-/// Domain rules:
-/// 1) Must belong to exactly one school year and one grade (immutable).
-/// 2) Name is required, trimmed, <= 128 chars; unique per (SchoolYearId, GradeId).
-/// 3) Lines (Curriculum) are managed separately to avoid coupling here.
+/// Aggregate root that defines the curricular plan for a given school year.
+/// Holds the weekly hours per (Grade, Subject) through <see cref="StudyPlanEntry"/>.
 /// </summary>
+/// <remarks>
+/// Invariants:
+/// - One StudyPlan per SchoolYear (enforced at persistence).
+/// - Entries are unique per (GradeId, SubjectId) within the same plan.
+/// - WeeklyHours in [0..40].
+/// </remarks>
 public sealed class StudyPlan : Entity
 {
-    public const int MaxNameLength = 128;
-
-    public Guid SchoolYearId { get; private set; }
-    public Guid GradeId { get; private set; }
-
-    public string Name { get; private set; } = "Plan";
-
+    private readonly List<StudyPlanEntry> _entries = new();
     private StudyPlan() { } // EF
 
-    /// <summary>Factory constructor that enforces invariants.</summary>
-    public StudyPlan(Guid schoolYearId, Guid gradeId, string name = "Plan 2011")
+    public StudyPlan(Guid id, Guid schoolYearId, string name, string? notes = null)
     {
-        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
-        if (gradeId == Guid.Empty) throw new ArgumentException("GradeId is required.", nameof(gradeId));
+        Id = id == default ? Guid.NewGuid() : id;
+        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId cannot be empty.", nameof(schoolYearId));
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name cannot be empty.", nameof(name));
 
-        name = NormalizeName(name);
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required.", nameof(name));
-        if (name.Length > MaxNameLength) throw new ArgumentException($"Name must be <= {MaxNameLength} chars.", nameof(name));
-
-        Id = Guid.NewGuid();
         SchoolYearId = schoolYearId;
-        GradeId = gradeId;
-        Name = name;
-        SetCreated();
+        Name = name.Trim();
+        Notes = string.IsNullOrWhiteSpace(notes) ? null : notes!.Trim();
     }
 
-    /// <summary>Renames the study plan (keeps invariants).</summary>
-    public StudyPlan Rename(string newName, string? modifiedBy = null)
+    /// <summary>FK to the academic year this plan belongs to.</summary>
+    public Guid SchoolYearId { get; private set; }
+
+    /// <summary>Human-friendly name (e.g., "Plan 2025").</summary>
+    public string Name { get; private set; } = null!;
+
+    /// <summary>Optional notes.</summary>
+    public string? Notes { get; private set; }
+
+    /// <summary>Entries defining weekly hours per grade and subject.</summary>
+    public IReadOnlyCollection<StudyPlanEntry> Entries => _entries;
+
+    public void Rename(string name)
     {
-        newName = NormalizeName(newName);
-        if (string.IsNullOrWhiteSpace(newName)) throw new ArgumentException("Name is required.", nameof(newName));
-        if (newName.Length > MaxNameLength) throw new ArgumentException($"Name must be <= {MaxNameLength} chars.", nameof(newName));
-        Name = newName;
-        SetModified(modifiedBy);
-        return this;
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name cannot be empty.", nameof(name));
+        Name = name.Trim();
     }
 
-    private static string NormalizeName(string value)
+    public void SetNotes(string? notes) => Notes = string.IsNullOrWhiteSpace(notes) ? null : notes!.Trim();
+
+    /// <summary>Creates or updates an entry for (grade, subject) with the given weekly hours.</summary>
+    public void UpsertEntry(Guid gradeId, Guid subjectId, byte weeklyHours, string? notes = null)
     {
-        var t = value.Trim();
-        while (t.Contains("  ")) t = t.Replace("  ", " ");
-        return t;
+        if (gradeId == Guid.Empty) throw new ArgumentException("GradeId cannot be empty.", nameof(gradeId));
+        if (subjectId == Guid.Empty) throw new ArgumentException("SubjectId cannot be empty.", nameof(subjectId));
+        if (weeklyHours > 40) throw new ArgumentOutOfRangeException(nameof(weeklyHours), "WeeklyHours must be between 0 and 40.");
+
+        var existing = _entries.FirstOrDefault(e => e.GradeId == gradeId && e.SubjectId == subjectId);
+        if (existing is null)
+        {
+            _entries.Add(new StudyPlanEntry(Guid.NewGuid(), Id, gradeId, subjectId, weeklyHours, notes));
+        }
+        else
+        {
+            existing.SetWeeklyHours(weeklyHours);
+            existing.SetNotes(notes);
+        }
     }
 
-    public override string ToString() => $"{Name} (Grade:{GradeId})";
+    /// <summary>Removes the entry identified by (grade, subject) if present.</summary>
+    public void RemoveEntry(Guid gradeId, Guid subjectId)
+    {
+        var existing = _entries.FirstOrDefault(e => e.GradeId == gradeId && e.SubjectId == subjectId);
+        if (existing is not null) _entries.Remove(existing);
+    }
 }

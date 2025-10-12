@@ -3,82 +3,67 @@
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Teacher available for assignments within a SchoolYear.
-/// Domain rules:
-/// 1) Must belong to a SchoolYear (immutable).
-/// 2) FullName is required, trimmed, <= 128 chars.
-/// 3) MaxDailyPeriods, when set, is 1..20 and overrides global config.
+/// Represents a teacher/personnel who can be assigned to class Assignments.
 /// </summary>
+/// <remarks>
+/// Invariants:
+/// - FullName: required (non-empty).
+/// - Email: optional, unique when present.
+/// - IsActive: soft on/off for scheduling/selection.
+/// - MaxWeeklyLoad: optional guard for scheduling (MVP default null).
+/// </remarks>
 public sealed class Teacher : Entity
 {
-    public const int MaxNameLength = 128;
-    public const int MaxTagsLength = 256;
+    /// <summary>Display name.</summary>
+    public string FullName { get; private set; } = null!;
 
-    public Guid SchoolYearId { get; private set; }
+    /// <summary>Optional unique email.</summary>
+    public string? Email { get; private set; }
 
-    public string FullName { get; private set; } = string.Empty;
-    public int? MaxDailyPeriods { get; private set; } // null = use SchedulingConfig
-    public string? Tags { get; private set; } // optional short metadata (e.g., specialties)
+    /// <summary>Optional weekly hours cap for scheduling.</summary>
+    public byte? MaxWeeklyLoad { get; private set; }
+
+    /// <summary>Soft on/off flag.</summary>
+    public bool IsActive { get; private set; }
 
     private Teacher() { } // EF
 
-    public Teacher(Guid schoolYearId, string fullName, int? maxDailyPeriods = null, string? tags = null)
+    public Teacher(Guid id, string fullName, string? email = null, byte? maxWeeklyLoad = null, bool isActive = true)
     {
-        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
-
-        fullName = NormalizeName(fullName);
-        if (string.IsNullOrWhiteSpace(fullName)) throw new ArgumentException("FullName is required.", nameof(fullName));
-        if (fullName.Length > MaxNameLength) throw new ArgumentException($"FullName must be <= {MaxNameLength} chars.", nameof(fullName));
-
-        ValidateMaxDaily(maxDailyPeriods);
-        if (tags is { Length: > MaxTagsLength }) throw new ArgumentException($"Tags must be <= {MaxTagsLength} chars.", nameof(tags));
-
-        Id = Guid.NewGuid();
-        SchoolYearId = schoolYearId;
-        FullName = fullName;
-        MaxDailyPeriods = maxDailyPeriods;
-        Tags = string.IsNullOrWhiteSpace(tags) ? null : tags.Trim();
-        SetCreated();
+        Id = id == default ? Guid.NewGuid() : id;
+        Rename(fullName);
+        SetEmail(email);
+        SetMaxWeeklyLoad(maxWeeklyLoad);
+        IsActive = isActive;
     }
 
-    public Teacher Rename(string newFullName, string? modifiedBy = null)
+
+    public void Rename(string fullName)
     {
-        newFullName = NormalizeName(newFullName);
-        if (string.IsNullOrWhiteSpace(newFullName)) throw new ArgumentException("FullName is required.", nameof(newFullName));
-        if (newFullName.Length > MaxNameLength) throw new ArgumentException($"FullName must be <= {MaxNameLength} chars.", nameof(newFullName));
-        FullName = newFullName;
-        SetModified(modifiedBy);
-        return this;
+        if (string.IsNullOrWhiteSpace(fullName))
+            throw new ArgumentException("Full name cannot be empty.", nameof(fullName));
+        FullName = fullName.Trim();
     }
 
-    public Teacher SetMaxDailyPeriods(int? value, string? modifiedBy = null)
+    public void SetEmail(string? email)
     {
-        ValidateMaxDaily(value);
-        MaxDailyPeriods = value;
-        SetModified(modifiedBy);
-        return this;
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            Email = null;
+            return;
+        }
+        var trimmed = email.Trim();
+        if (!trimmed.Contains("@") || trimmed.StartsWith("@") || trimmed.EndsWith("@"))
+            throw new ArgumentException("Invalid email format.", nameof(email));
+        Email = trimmed;
     }
 
-    public Teacher SetTags(string? tags, string? modifiedBy = null)
+    public void SetMaxWeeklyLoad(byte? hours)
     {
-        if (tags is { Length: > MaxTagsLength }) throw new ArgumentException($"Tags must be <= {MaxTagsLength} chars.", nameof(tags));
-        Tags = string.IsNullOrWhiteSpace(tags) ? null : tags.Trim();
-        SetModified(modifiedBy);
-        return this;
+        if (hours is > 40) throw new ArgumentOutOfRangeException(nameof(hours), "MaxWeeklyLoad must be <= 40.");
+        MaxWeeklyLoad = hours;
     }
 
-    public override string ToString() => FullName;
-
-    private static string NormalizeName(string value)
-    {
-        var t = value.Trim();
-        while (t.Contains("  ")) t = t.Replace("  ", " ");
-        return t;
-    }
-
-    private static void ValidateMaxDaily(int? value)
-    {
-        if (value.HasValue && (value.Value < 1 || value.Value > 20))
-            throw new ArgumentOutOfRangeException(nameof(value), "MaxDailyPeriods must be between 1 and 20.");
-    }
+    public void Activate() => IsActive = true;
+    public void Deactivate() => IsActive = false;
 }

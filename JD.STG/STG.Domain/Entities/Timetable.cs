@@ -1,61 +1,57 @@
-﻿// FILE: STG.Domain/Entities/Timetable.cs
-using STG.Domain.Entities.Base;
+﻿using STG.Domain.Entities.Base;
 
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Aggregate representing the scheduled timetable for a Group in a SchoolYear.
-/// Domain rules:
-/// 1) Belongs to (SchoolYearId, GroupId) and owns multiple entries.
-/// 2) Must not contain duplicate (DayOfWeek, PeriodNumber) cells.
-/// 3) Overlap checks for teachers are typically enforced at service/policy level,
-///    but helper detection methods are provided.
+/// Weekly timetable for a specific Group in a SchoolYear (e.g., 7A - 2025).
+/// Aggregate root of <see cref="TimetableEntry"/>.
 /// </summary>
+/// <remarks>
+/// Invariants:
+/// - Unique per (GroupId, SchoolYearId).
+/// - Entries cannot overlap on (DayOfWeek, PeriodIndex) within the same timetable.
+/// - Each entry must reference an Assignment that belongs to the same (Group, SchoolYear).
+/// </remarks>
 public sealed class Timetable : Entity
 {
-    public Guid SchoolYearId { get; private set; }
-    public Guid GroupId { get; private set; }
-
-    public double? Score { get; private set; }
-
-    public IReadOnlyCollection<TimetableEntry> Entries => _entries.AsReadOnly();
     private readonly List<TimetableEntry> _entries = new();
+
+    /// <summary>FK to the Group this timetable belongs to.</summary>
+    public Guid GroupId { get; private set; }
+    public Group Group { get; private set; } = null!;
+
+    /// <summary>FK to the SchoolYear.</summary>
+    public Guid SchoolYearId { get; private set; }
+    public SchoolYear SchoolYear { get; private set; } = null!;
+
+    /// <summary>Display name (e.g., "7A - 2025").</summary>
+    public string Name { get; private set; } = null!;
+
+    /// <summary>Optional notes.</summary>
+    public string? Notes { get; private set; }
 
     private Timetable() { } // EF
 
-    public Timetable(Guid schoolYearId, Guid groupId)
+    public Timetable(Guid id, Guid groupId, Guid schoolYearId, string name)
     {
-        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
-        if (groupId == Guid.Empty) throw new ArgumentException("GroupId is required.", nameof(groupId));
+        Id = id == default ? Guid.NewGuid() : id;
+        if (groupId == Guid.Empty) throw new ArgumentException("GroupId cannot be empty.", nameof(groupId));
+        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId cannot be empty.", nameof(schoolYearId));
+        Rename(name);
 
-        Id = Guid.NewGuid();
-        SchoolYearId = schoolYearId;
         GroupId = groupId;
-        SetCreated();
+        SchoolYearId = schoolYearId;
     }
 
-    /// <summary>Adds an entry ensuring no duplicate cell exists in this timetable.</summary>
-    public Timetable AddEntry(TimetableEntry entry, string? modifiedBy = null)
+
+    /// <summary>Entries (timeslots) for this timetable.</summary>
+    public IReadOnlyCollection<TimetableEntry> Entries => _entries;
+
+    public void Rename(string name)
     {
-        if (entry is null) throw new ArgumentNullException(nameof(entry));
-        if (entry.TimetableId != Id) throw new InvalidOperationException("Entry must target this Timetable.");
-        if (_entries.Any(e => e.DayOfWeek == entry.DayOfWeek && e.PeriodNumber == entry.PeriodNumber))
-            throw new InvalidOperationException("Duplicate (DayOfWeek, PeriodNumber) in timetable.");
-
-        _entries.Add(entry);
-        SetModified(modifiedBy);
-        return this;
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name cannot be empty.", nameof(name));
+        Name = name.Trim();
     }
 
-    /// <summary>Sets the computed score.</summary>
-    public Timetable SetScore(double? score, string? modifiedBy = null)
-    {
-        Score = score;
-        SetModified(modifiedBy);
-        return this;
-    }
-
-    /// <summary>Detects if the teacher is already scheduled in this cell.</summary>
-    public bool HasTeacherAt(DayOfWeek day, int period, Guid teacherId)
-        => _entries.Any(e => e.DayOfWeek == day && e.PeriodNumber == period && e.AssignmentTeacherId == teacherId);
+    public void SetNotes(string? notes) => Notes = string.IsNullOrWhiteSpace(notes) ? null : notes!.Trim();
 }

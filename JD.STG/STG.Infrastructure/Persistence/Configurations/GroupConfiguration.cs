@@ -8,18 +8,18 @@ public sealed class GroupConfiguration : IEntityTypeConfiguration<Group>
 {
     public void Configure(EntityTypeBuilder<Group> b)
     {
-        b.ToTable("Groups");
+        b.ToTable("Group");
         b.HasKey(x => x.Id);
 
-        b.Property(x => x.GradeName)
-            .IsRequired()
-            .HasMaxLength(Group.MaxNameLength);
+        b.Property(x => x.GradeId).IsRequired();
+        b.Property(x => x.Name).HasMaxLength(16).IsRequired();
 
-        b.HasIndex(x => new { x.GradeId, x.GradeName }).IsUnique();
+        // Unique per grade (GradeId, Name)
+        b.HasIndex(x => new { x.GradeId, x.Name }).IsUnique();
 
-        b.HasOne<Grade>()
-            .WithMany()
-            .HasForeignKey(x => x.GradeId)
-            .OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Grade)
+         .WithMany() // groups are catalog-like; adjust if you add Grade.Groups
+         .HasForeignKey(x => x.GradeId)
+         .OnDelete(DeleteBehavior.Restrict);
     }
 }

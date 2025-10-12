@@ -1,61 +1,75 @@
-﻿using STG.Application.Abstractions.Persistence;
+﻿// src/STG.Application/Personnel/TeacherService.cs
+using STG.Application.Abstractions.Persistence;
 using STG.Domain.Entities;
 
 namespace STG.Application.Services;
 
+/// <summary>Application service for managing Teachers (no CQRS/MediatR).</summary>
 public sealed class TeacherService
 {
-    private readonly ITeacherRepository _teachers;
-    private readonly IUnitOfWork _uow;
+    private readonly ITeacherRepository _teacherRepository;
 
-    public TeacherService(ITeacherRepository teachers, IUnitOfWork uow)
+    public TeacherService(ITeacherRepository teachers) => _teacherRepository = teachers;
+
+    /// <summary>Create a teacher ensuring email uniqueness when provided.</summary>
+    public async Task<Guid> CreateAsync(string fullName, string? email = null, byte? maxWeeklyLoad = null, CancellationToken ct = default)
     {
-        _teachers = teachers;
-        _uow = uow;
+        if (string.IsNullOrWhiteSpace(fullName))
+            throw new ArgumentException("Full name cannot be empty.", nameof(fullName));
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var dup = await _teacherRepository.GetByEmailAsync(email.Trim(), ct);
+            if (dup is not null)
+                throw new InvalidOperationException($"Email '{email}' is already in use.");
+        }
+
+        var entity = new Teacher(Guid.NewGuid(), fullName.Trim(), string.IsNullOrWhiteSpace(email) ? null : email!.Trim(), maxWeeklyLoad, isActive: true);
+        return await _teacherRepository.AddAsync(entity, ct);
     }
 
-    public async Task<Guid> CreateAsync(string name, IEnumerable<string>? subjects = null, CancellationToken ct = default)
+    public async Task RenameAsync(Guid id, string fullName, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name required.");
-        if (await _teachers.GetByNameAsync(name.Trim(), ct) is not null)
-            throw new InvalidOperationException("Teacher already exists.");
-
-        var t = new Teacher(name.Trim(), subjects);
-        await _teachers.AddAsync(t, ct);
-        await _uow.SaveChangesAsync(ct);
-        return t.Id;
+        var current = await _teacherRepository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("Teacher not found.");
+        current.Rename(fullName);
+        await _teacherRepository.UpdateAsync(current, ct);
     }
 
-    public Task<IReadOnlyList<Teacher>> ListAsync(CancellationToken ct = default)
-        => _teachers.ListAllAsync(ct);
-
-    public Task<IReadOnlyList<Teacher>> ListQualifiedForAsync(string subjectName, CancellationToken ct = default)
-        => _teachers.ListQualifiedForAsync(subjectName, ct);
-
-    public async Task AddSubjectAsync(Guid teacherId, string subjectName, CancellationToken ct = default)
+    public async Task SetEmailAsync(Guid id, string? email, CancellationToken ct = default)
     {
-        var t = await _teachers.GetByIdAsync(teacherId, ct) ?? throw new KeyNotFoundException("Teacher not found.");
-        if (t.AddSubject(subjectName)) { _teachers.Update(t); await _uow.SaveChangesAsync(ct); }
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var dup = await _teacherRepository.GetByEmailAsync(email.Trim(), ct);
+            if (dup is not null && dup.Id != id)
+                throw new InvalidOperationException($"Email '{email}' is already in use.");
+        }
+
+        var current = await _teacherRepository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("Teacher not found.");
+        current.SetEmail(email);
+        await _teacherRepository.UpdateAsync(current, ct);
     }
 
-    public async Task RemoveSubjectAsync(Guid teacherId, string subjectName, CancellationToken ct = default)
+    public async Task SetMaxWeeklyLoadAsync(Guid id, byte? hours, CancellationToken ct = default)
     {
-        var t = await _teachers.GetByIdAsync(teacherId, ct) ?? throw new KeyNotFoundException("Teacher not found.");
-        if (t.RemoveSubject(subjectName)) { _teachers.Update(t); await _uow.SaveChangesAsync(ct); }
+        var current = await _teacherRepository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("Teacher not found.");
+        current.SetMaxWeeklyLoad(hours);
+        await _teacherRepository.UpdateAsync(current, ct);
     }
 
-    public async Task RenameAsync(Guid teacherId, string newName, CancellationToken ct = default)
+    public async Task DeactivateAsync(Guid id, CancellationToken ct = default)
     {
-        var t = await _teachers.GetByIdAsync(teacherId, ct) ?? throw new KeyNotFoundException("Teacher not found.");
-        t.Rename(newName);
-        _teachers.Update(t);
-        await _uow.SaveChangesAsync(ct);
+        var current = await _teacherRepository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("Teacher not found.");
+        current.Deactivate();
+        await _teacherRepository.UpdateAsync(current, ct);
     }
 
-    public async Task DeleteAsync(Guid teacherId, CancellationToken ct = default)
+    public async Task ActivateAsync(Guid id, CancellationToken ct = default)
     {
-        var t = await _teachers.GetByIdAsync(teacherId, ct);
-        _teachers.Remove(t);
-        await _uow.SaveChangesAsync(ct);
+        var current = await _teacherRepository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("Teacher not found.");
+        current.Activate();
+        await _teacherRepository.UpdateAsync(current, ct);
     }
+
+    public Task<List<Teacher>> ListAsync(bool onlyActive = true, CancellationToken ct = default)
+        => _teacherRepository.ListAllAsync(onlyActive, ct);
 }

@@ -62,7 +62,7 @@ if (app.Environment.IsDevelopment())
     // Seeder
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<StgDbContext>();
-    await DataSeeder.SeedAsync(db);
+    await DataSeeder.SeedAsync(app.Services);
 }
 
 // Endpoints

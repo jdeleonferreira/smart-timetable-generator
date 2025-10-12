@@ -4,47 +4,67 @@ using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Repositories;
 
-public sealed class StudyPlanRepository : IStudyPlanRepository
+internal sealed class StudyPlanRepository : IStudyPlanRepository
 {
     private readonly StgDbContext _db;
     public StudyPlanRepository(StgDbContext db) => _db = db;
 
-    public async Task<byte?> GetHoursAsync(Guid schoolYearId, Guid gradeId, Guid subjectId, CancellationToken ct = default)
+    public Task<StudyPlan?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => _db.StudyPlans
+              .Include(p => p.Entries)
+              .AsNoTracking()
+              .FirstOrDefaultAsync(p => p.Id == id, ct);
+
+    public Task<StudyPlan?> GetByYearAsync(int year, CancellationToken ct = default)
+        => _db.StudyPlans
+              .Include(p => p.Entries)
+              .AsNoTracking()
+              .Where(p => _db.SchoolYears.Any(y => y.Id == p.SchoolYearId && y.Year == year))
+              .FirstOrDefaultAsync(ct);
+
+    public async Task<Guid> AddAsync(StudyPlan entity, CancellationToken ct = default)
+    {
+        await _db.StudyPlans.AddAsync(entity, ct);
+        await _db.SaveChangesAsync(ct); // auto-save
+        return entity.Id;
+    }
+
+    public async Task UpdateAsync(StudyPlan entity, CancellationToken ct = default)
+    {
+        _db.StudyPlans.Update(entity);
+        await _db.SaveChangesAsync(ct); // auto-save
+    }
+
+    public Task<StudyPlanEntry?> FindEntryAsync(Guid studyPlanId, Guid gradeId, Guid subjectId, CancellationToken ct = default)
+        => _db.StudyPlanEntries.AsNoTracking()
+           .FirstOrDefaultAsync(e => e.StudyPlanId == studyPlanId && e.GradeId == gradeId && e.SubjectId == subjectId, ct);
+
+    public async Task UpsertEntryAsync(Guid studyPlanId, Guid gradeId, Guid subjectId, byte weeklyHours, string? notes, CancellationToken ct = default)
     {
         var entry = await _db.StudyPlanEntries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.SchoolYearId == schoolYearId && x.GradeId == gradeId && x.SubjectId == subjectId, ct);
+            .FirstOrDefaultAsync(e => e.StudyPlanId == studyPlanId && e.GradeId == gradeId && e.SubjectId == subjectId, ct);
 
-        return entry?.WeeklyHours;
-    }
-
-    public async Task<IReadOnlyList<StudyPlanEntry>> ListByGradeAsync(Guid schoolYearId, Guid gradeId, CancellationToken ct = default) =>
-        await _db.StudyPlanEntries
-            .Where(x => x.SchoolYearId == schoolYearId && x.GradeId == gradeId)
-            .AsNoTracking()
-            .ToListAsync(ct);
-
-    public Task AddAsync(StudyPlanEntry entry, CancellationToken ct = default)
-    {
-        _db.StudyPlanEntries.Add(entry);
-        return Task.CompletedTask;
-    }
-
-    public async Task UpsertAsync(StudyPlanEntry entry, CancellationToken ct = default)
-    {
-        var existing = await _db.StudyPlanEntries.FirstOrDefaultAsync(x =>
-            x.SchoolYearId == entry.SchoolYearId &&
-            x.GradeId == entry.GradeId &&
-            x.SubjectId == entry.SubjectId, ct);
-
-        if (existing is null)
+        if (entry is null)
         {
-            _db.StudyPlanEntries.Add(entry);
+            entry = new StudyPlanEntry(Guid.NewGuid(), studyPlanId, gradeId, subjectId, weeklyHours, notes);
+            await _db.StudyPlanEntries.AddAsync(entry, ct);
         }
         else
         {
-            existing = new StudyPlanEntry(entry.SchoolYearId, entry.GradeId, entry.SubjectId, entry.WeeklyHours) { };
-            _db.StudyPlanEntries.Update(existing);
+            entry.SetWeeklyHours(weeklyHours);
+            entry.SetNotes(notes);
+            _db.StudyPlanEntries.Update(entry);
         }
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task RemoveEntryAsync(Guid studyPlanId, Guid gradeId, Guid subjectId, CancellationToken ct = default)
+    {
+        var entry = await _db.StudyPlanEntries
+            .FirstOrDefaultAsync(e => e.StudyPlanId == studyPlanId && e.GradeId == gradeId && e.SubjectId == subjectId, ct);
+
+        if (entry is null) return;
+        _db.StudyPlanEntries.Remove(entry);
+        await _db.SaveChangesAsync(ct);
     }
 }

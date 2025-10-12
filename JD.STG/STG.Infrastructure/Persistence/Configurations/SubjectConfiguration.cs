@@ -4,27 +4,26 @@ using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
+/// <summary>EF Core mapping for <see cref="Subject"/>.</summary>
 public sealed class SubjectConfiguration : IEntityTypeConfiguration<Subject>
 {
     public void Configure(EntityTypeBuilder<Subject> b)
     {
-        b.ToTable("Subjects");
+        b.ToTable("Subject");
         b.HasKey(x => x.Id);
 
-        b.Property(x => x.Name)
-            .IsRequired()
-            .HasMaxLength(Subject.MaxNameLength);
+        b.Property(x => x.Name).HasMaxLength(120).IsRequired();
+        b.Property(x => x.Code).HasMaxLength(32);
+        b.Property(x => x.IsElective).HasDefaultValue(false).IsRequired();
 
-        b.Property(x => x.Code)
-            .HasMaxLength(Subject.MaxCodeLength);
+        b.Property(x => x.StudyAreaId).IsRequired();
 
-        b.HasIndex(x => new { x.SchoolYearId, x.Name }).IsUnique();
-        // Unique filtered index for Code when not null (SQL Server syntax)
-        b.HasIndex(x => new { x.SchoolYearId, x.Code }).IsUnique().HasFilter("[Code] IS NOT NULL");
+        b.HasOne(x => x.StudyArea)
+         .WithMany(a => a.Subjects)
+         .HasForeignKey(x => x.StudyAreaId)
+         .OnDelete(DeleteBehavior.Restrict);
 
-        b.HasOne<SchoolYear>()
-            .WithMany()
-            .HasForeignKey(x => x.SchoolYearId)
-            .OnDelete(DeleteBehavior.Restrict);
+        b.HasIndex(x => x.Name).IsUnique();
+        b.HasIndex(x => x.Code).IsUnique().HasFilter("[Code] IS NOT NULL");
     }
 }

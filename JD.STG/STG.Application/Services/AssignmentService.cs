@@ -3,72 +3,77 @@ using STG.Domain.Entities;
 
 namespace STG.Application.Services;
 
+/// <summary>Application service for managing Assignments.</summary>
 public sealed class AssignmentService
 {
-    private readonly IAssignmentRepository _assignments;
-    private readonly IStudyPlanRepository _studyPlan;
-    private readonly ITeacherRepository _teachers;
-    private readonly IGroupRepository _groups;
-    private readonly IUnitOfWork _uow;
+    private readonly IAssignmentRepository _assignmentRepository;
+    private readonly IGroupRepository _groupRepository;
+    private readonly ISubjectRepository _subjectRepository;
+    private readonly ISchoolYearRepository _schoolYearRepository;
 
     public AssignmentService(
         IAssignmentRepository assignments,
-        IStudyPlanRepository studyPlan,
-        ITeacherRepository teachers,
         IGroupRepository groups,
-        IUnitOfWork uow)
+        ISubjectRepository subjects,
+        ISchoolYearRepository years)
     {
-        _assignments = assignments;
-        _studyPlan = studyPlan;
-        _teachers = teachers;
-        _groups = groups;
-        _uow = uow;
+        _assignmentRepository = assignments;
+        _groupRepository = groups;
+        _subjectRepository = subjects;
+        _schoolYearRepository = years;
     }
 
-    // Create
-    public async Task<Guid> CreateAsync(Guid schoolYearId, Guid groupId, Guid subjectId, Guid teacherId, byte weeklyHours, CancellationToken ct = default)
+    /// <summary>Create or update an Assignment idempotently.</summary>
+    public async Task UpsertAsync(Guid groupId, Guid subjectId, int year, byte weeklyHours, Guid? teacherId = null, string? notes = null, CancellationToken ct = default)
     {
-        // 1) Validaciones mínimas
-        var ihPlan = await _studyPlan.GetHoursAsync(schoolYearId, gradeId: await ResolveGradeId(groupId, ct), subjectId, ct);
-        if (ihPlan is null || weeklyHours > ihPlan.Value)
-            throw new InvalidOperationException("WeeklyHours exceeds study plan IH.");
+        // Validate catalogs
+        _ = await _groupRepository.GetByIdAsync(groupId, ct) ?? throw new KeyNotFoundException("Group not found.");
+        _ = await _subjectRepository.GetByIdAsync(subjectId, ct) ?? throw new KeyNotFoundException("Subject not found.");
+        var schoolYear = await _schoolYearRepository.GetByYearAsync(year, ct) ?? throw new KeyNotFoundException($"SchoolYear {year} not found.");
 
-        // 2) Evitar duplicados grupo+materia
-        if (await _assignments.ExistsForGroupSubjectAsync(schoolYearId, groupId, subjectId, ct))
-            throw new InvalidOperationException("Assignment already exists for Group+Subject.");
-
-        // 3) Crear
-        var entity = new Assignment(schoolYearId, groupId, subjectId, teacherId, weeklyHours);
-        await _assignments.AddAsync(entity, ct);
-
-        await _uow.SaveChangesAsync(ct);
-        return entity.Id;
+        await _assignmentRepository.UpsertAsync(groupId, subjectId, schoolYear.Id, weeklyHours, teacherId, notes, ct);
     }
 
-    // Update teacher / IH
-    public async Task UpdateTeacherAsync(Guid assignmentId, Guid newTeacherId, CancellationToken ct = default)
+    /// <summary>Assigns/changes the Teacher for an Assignment.</summary>
+    public async Task SetTeacherAsync(Guid groupId, Guid subjectId, int year, Guid? teacherId, CancellationToken ct = default)
     {
-        var a = await _assignments.GetByIdAsync(assignmentId, ct) ?? throw new KeyNotFoundException("Assignment not found.");
-        a.ChangeTeacher(newTeacherId);
-        _assignments.Update(a);
-        await _uow.SaveChangesAsync(ct);
+        var schoolYear = await _schoolYearRepository.GetByYearAsync(year, ct) ?? throw new KeyNotFoundException($"SchoolYear {year} not found.");
+        var current = await _assignmentRepository.GetAsync(groupId, subjectId, schoolYear.Id, ct)
+                      ?? throw new KeyNotFoundException("Assignment not found.");
+
+        current.SetTeacher(teacherId);
+        await _assignmentRepository.UpdateAsync(current, ct);
     }
 
-    public async Task UpdateWeeklyHoursAsync(Guid assignmentId, byte ih, CancellationToken ct = default)
+    /// <summary>Updates weekly hours.</summary>
+    public async Task SetWeeklyHoursAsync(Guid groupId, Guid subjectId, int year, byte weeklyHours, CancellationToken ct = default)
     {
-        var a = await _assignments.GetByIdAsync(assignmentId, ct) ?? throw new KeyNotFoundException("Assignment not found.");
-        // Validar contra plan
-        var gradeId = await ResolveGradeId(a.GroupId, ct);
-        var ihPlan = await _studyPlan.GetHoursAsync(a.SchoolYearId, gradeId, a.SubjectId, ct) ?? 0;
-        if (ih == 0 || ih > ihPlan) throw new InvalidOperationException("IH exceeds plan.");
-        a.ChangeWeeklyHours(ih);
-        _assignments.Update(a);
-        await _uow.SaveChangesAsync(ct);
+        var schoolYear = await _schoolYearRepository.GetByYearAsync(year, ct) ?? throw new KeyNotFoundException($"SchoolYear {year} not found.");
+        var current = await _assignmentRepository.GetAsync(groupId, subjectId, schoolYear.Id, ct)
+                      ?? throw new KeyNotFoundException("Assignment not found.");
+
+        current.SetWeeklyHours(weeklyHours);
+        await _assignmentRepository.UpdateAsync(current, ct);
     }
 
-    private async Task<Guid> ResolveGradeId(Guid groupId, CancellationToken ct)
+    public async Task RemoveAsync(Guid groupId, Guid subjectId, int year, CancellationToken ct = default)
     {
-        var g = await _groups.GetByIdAsync(groupId, ct) ?? throw new KeyNotFoundException("Group not found.");
-        return g.GradeId;
+        var schoolYear = await _schoolYearRepository.GetByYearAsync(year, ct) ?? throw new KeyNotFoundException($"SchoolYear {year} not found.");
+        var current = await _assignmentRepository.GetAsync(groupId, subjectId, schoolYear.Id, ct)
+                      ?? throw new KeyNotFoundException("Assignment not found.");
+
+        await _assignmentRepository.DeleteAsync(current.Id, ct);
+    }
+
+    public async Task<List<Assignment>> ListByGroupAsync(Guid groupId, int year, CancellationToken ct = default)
+    {
+        var schoolYear = await _schoolYearRepository.GetByYearAsync(year, ct) ?? throw new KeyNotFoundException($"SchoolYear {year} not found.");
+        return await _assignmentRepository.ListByGroupAsync(groupId, schoolYear.Id, ct);
+    }
+
+    public async Task<List<Assignment>> ListByTeacherAsync(Guid teacherId, int year, CancellationToken ct = default)
+    {
+        var schoolYear = await _schoolYearRepository.GetByYearAsync(year, ct) ?? throw new KeyNotFoundException($"SchoolYear {year} not found.");
+        return await _assignmentRepository.ListByTeacherAsync(teacherId, schoolYear.Id, ct);
     }
 }

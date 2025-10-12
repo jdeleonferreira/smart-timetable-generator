@@ -1,86 +1,47 @@
-﻿using STG.Domain.Entities.Base;
+﻿// src/STG.Domain/Entities/Group.cs
+using STG.Domain.Entities.Base;
 
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Represents a class division within a specific grade of a school year.
-/// Example: Grade "6" may contain groups "6A" and "6B".
+/// Represents a class division within a Grade (e.g., 7A, 7B).
 /// </summary>
+/// <remarks>
+/// Invariants:
+/// - Name: required (non-empty).
+/// - (GradeId, Name) must be unique at persistence level.
+/// </remarks>
 public sealed class Group : Entity
 {
-    /// <summary>
-    /// Reference to the parent <see cref="Grade"/> entity.
-    /// </summary>
+    /// <summary>FK to <see cref="Grade"/> the group belongs to.</summary>
     public Guid GradeId { get; private set; }
 
-    /// <summary>
-    /// Optional human-friendly grade name for quick access (denormalized).
-    /// Example: "6" or "10".
-    /// </summary>
-    public string GradeName { get; private set; } = string.Empty;
+    /// <summary>Navigation to parent Grade.</summary>
+    public Grade Grade { get; private set; } = null!;
 
-    /// <summary>
-    /// Group label (e.g., "A", "B").
-    /// </summary>
-    public string Label { get; private set; } = string.Empty;
+    /// <summary>Short label (e.g., "A", "B", "7A"). Unique per grade.</summary>
+    public string Name { get; private set; } = null!;
 
-    /// <summary>
-    /// Number of enrolled students.
-    /// </summary>
-    public ushort Size { get; private set; }
+    private Group() { } // EF
 
-    /// <summary>
-    /// Concatenated group code (e.g., "6A", "10B").
-    /// </summary>
-    public string Code => $"{GradeName}{Label}";
-
-    public const int MaxNameLength = 5; // e.g., "10A"
-
-    private Group() { } // EF Core
-
-    /// <summary>
-    /// Creates a new group for the specified grade.
-    /// </summary>
-    /// <param name="gradeId">Identifier of the parent <see cref="Grade"/>.</param>
-    /// <param name="gradeName">Readable grade label (e.g. "6").</param>
-    /// <param name="label">Letter label (e.g. "A", "B").</param>
-    /// <param name="size">Number of students in the group.</param>
-    public Group(Guid gradeId, string gradeName, string label, ushort size)
+    public Group(Guid id, Guid gradeId, string name)
     {
-        if (gradeId == Guid.Empty) throw new ArgumentException("GradeId is required.", nameof(gradeId));
-        if (string.IsNullOrWhiteSpace(gradeName)) throw new ArgumentException("Grade name is required.", nameof(gradeName));
-        if (string.IsNullOrWhiteSpace(label)) label = "A";
-        if (size == 0) throw new ArgumentOutOfRangeException(nameof(size), "Group size must be greater than zero.");
+        Id = id == default ? Guid.NewGuid() : id;
+        SetGrade(gradeId);
+        Rename(name);
+    }
 
-        SetCreated();
-        Id = Guid.NewGuid();
+    public void Rename(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Group name cannot be empty.", nameof(name));
+        Name = name.Trim();
+    }
+
+    public void SetGrade(Guid gradeId)
+    {
+        if (gradeId == Guid.Empty)
+            throw new ArgumentException("GradeId cannot be empty.", nameof(gradeId));
         GradeId = gradeId;
-        GradeName = gradeName.Trim();
-        Label = label.Trim().ToUpperInvariant();
-        Size = size;
     }
-
-    /// <summary>
-    /// Updates the number of students.
-    /// </summary>
-    public void Resize(ushort newSize, string? modifiedBy = null)
-    {
-        if (newSize == 0) throw new ArgumentOutOfRangeException(nameof(newSize));
-        Size = newSize;
-        SetModified(modifiedBy);
-    }
-
-    /// <summary>
-    /// Changes the label (e.g., "A" → "B").
-    /// </summary>
-    public void Relabel(string newLabel, string? modifiedBy = null)
-    {
-        if (string.IsNullOrWhiteSpace(newLabel))
-            throw new ArgumentException("Label is required.", nameof(newLabel));
-
-        Label = newLabel.Trim().ToUpperInvariant();
-        SetModified(modifiedBy);
-    }
-
-    public override string ToString() => $"{Code} ({Size} students)";
 }

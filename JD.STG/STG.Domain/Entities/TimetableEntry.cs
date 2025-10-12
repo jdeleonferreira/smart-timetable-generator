@@ -3,63 +3,66 @@
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Scheduled cell for a specific (DayOfWeek, PeriodNumber) pointing to an Assignment.
-/// Domain rules:
-/// 1) Must belong to a Timetable (immutable) and target an Assignment (immutable).
-/// 2) (TimetableId, DayOfWeek, PeriodNumber) must be unique (persistence).
-/// 3) PeriodNumber is 1..20.
+/// Single timeslot within a weekly timetable.
+/// Links to an <see cref="Assignment"/> and occupies (DayOfWeek, PeriodIndex).
 /// </summary>
+/// <remarks>
+/// Invariants:
+/// - DayOfWeek in [0..6] (0=Sunday or set your convention).
+/// - PeriodIndex in [1..24].
+/// - Span in [1..8] (consecutive periods; use 1 if your blocks are unitary).
+/// </remarks>
 public sealed class TimetableEntry : Entity
 {
     public Guid TimetableId { get; private set; }
+    public Timetable Timetable { get; private set; } = null!;
 
-    public DayOfWeek DayOfWeek { get; private set; }
-    public int PeriodNumber { get; private set; } // 1..20
-
+    /// <summary>Linked assignment (Group, Subject, Year) that is being scheduled.</summary>
     public Guid AssignmentId { get; private set; }
-    public Guid AssignmentTeacherId { get; private set; } // denormalized for quick checks
-    public Guid AssignmentSubjectId { get; private set; } // denormalized for reporting
+    public Assignment Assignment { get; private set; } = null!;
 
-    public Guid? RoomId { get; private set; } // optional
-    public string? ReasonJson { get; private set; } // optional lightweight explanation
+    /// <summary>0..6, choose your convention (e.g., 1=Mon..5=Fri).</summary>
+    public byte DayOfWeek { get; private set; }
+
+    /// <summary>1..24 fixed index in the day. Use bell table externally if needed.</summary>
+    public byte PeriodIndex { get; private set; }
+
+    /// <summary>Number of consecutive periods (>=1).</summary>
+    public byte Span { get; private set; }
+
+    /// <summary>Optional room/code.</summary>
+    public string? Room { get; private set; }
+
+    /// <summary>Optional notes.</summary>
+    public string? Notes { get; private set; }
 
     private TimetableEntry() { } // EF
 
-    public TimetableEntry(Guid timetableId, DayOfWeek dayOfWeek, int periodNumber,
-                          Guid assignmentId, Guid assignmentTeacherId, Guid assignmentSubjectId,
-                          Guid? roomId = null, string? reasonJson = null)
+    public TimetableEntry(Guid id, Guid timetableId, Guid assignmentId, byte dayOfWeek, byte periodIndex, byte span = 1, string? room = null, string? notes = null)
     {
-        if (timetableId == Guid.Empty) throw new ArgumentException("TimetableId is required.", nameof(timetableId));
-        if (assignmentId == Guid.Empty) throw new ArgumentException("AssignmentId is required.", nameof(assignmentId));
-        if (assignmentTeacherId == Guid.Empty) throw new ArgumentException("AssignmentTeacherId is required.", nameof(assignmentTeacherId));
-        if (assignmentSubjectId == Guid.Empty) throw new ArgumentException("AssignmentSubjectId is required.", nameof(assignmentSubjectId));
-        if (periodNumber < 1 || periodNumber > 20) throw new ArgumentOutOfRangeException(nameof(periodNumber), "PeriodNumber must be between 1 and 20.");
+        Id = id == default ? Guid.NewGuid() : id;
 
-        Id = Guid.NewGuid();
+        if (timetableId == Guid.Empty) throw new ArgumentException("TimetableId cannot be empty.", nameof(timetableId));
+        if (assignmentId == Guid.Empty) throw new ArgumentException("AssignmentId cannot be empty.", nameof(assignmentId));
+        SetDayAndPeriod(dayOfWeek, periodIndex, span);
+
         TimetableId = timetableId;
-        DayOfWeek = dayOfWeek;
-        PeriodNumber = periodNumber;
         AssignmentId = assignmentId;
-        AssignmentTeacherId = assignmentTeacherId;
-        AssignmentSubjectId = assignmentSubjectId;
-        RoomId = roomId;
-        ReasonJson = string.IsNullOrWhiteSpace(reasonJson) ? null : reasonJson.Trim();
-        SetCreated();
+        SetRoom(room);
+        SetNotes(notes);
     }
 
-    public TimetableEntry SetRoom(Guid? roomId, string? modifiedBy = null)
+
+    public void SetDayAndPeriod(byte dayOfWeek, byte periodIndex, byte span = 1)
     {
-        RoomId = roomId;
-        SetModified(modifiedBy);
-        return this;
+        if (dayOfWeek > 6) throw new ArgumentOutOfRangeException(nameof(dayOfWeek), "DayOfWeek must be between 0 and 6.");
+        if (periodIndex is < 1 or > 24) throw new ArgumentOutOfRangeException(nameof(periodIndex), "PeriodIndex must be between 1 and 24.");
+        if (span is < 1 or > 8) throw new ArgumentOutOfRangeException(nameof(span), "Span must be between 1 and 8.");
+        DayOfWeek = dayOfWeek;
+        PeriodIndex = periodIndex;
+        Span = span;
     }
 
-    public TimetableEntry SetReason(string? json, string? modifiedBy = null)
-    {
-        ReasonJson = string.IsNullOrWhiteSpace(json) ? null : json.Trim();
-        SetModified(modifiedBy);
-        return this;
-    }
-
-    public override string ToString() => $"{DayOfWeek} P{PeriodNumber} • A:{AssignmentId}";
+    public void SetRoom(string? room) => Room = string.IsNullOrWhiteSpace(room) ? null : room.Trim();
+    public void SetNotes(string? notes) => Notes = string.IsNullOrWhiteSpace(notes) ? null : notes!.Trim();
 }

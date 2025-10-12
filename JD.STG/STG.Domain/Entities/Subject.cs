@@ -3,83 +3,60 @@
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Academic subject that can be assigned to groups/teachers within a SchoolYear.
-/// Domain rules:
-/// 1) Must belong to a SchoolYear (immutable reference).
-/// 2) Name is required, trimmed, <= 64 chars; unique per SchoolYear.
-/// 3) Optional short Code (<= 16 chars) is uppercased; unique per SchoolYear when provided.
+/// Represents a school subject (e.g., Algebra, Biology) within a <see cref="StudyArea"/>.
 /// </summary>
+/// <remarks>
+/// Invariants:
+/// - Name: required (non-empty), unique at persistence.
+/// - StudyAreaId: required (cannot be Guid.Empty).
+/// - Code: optional, unique if present.
+/// </remarks>
 public sealed class Subject : Entity
 {
-    public const int MaxNameLength = 64;
-    public const int MaxCodeLength = 16;
+    public string Name { get; private set; } = null!;
 
-    public Guid SchoolYearId { get; private set; }
+    /// <summary>Optional short code (unique if present).</summary>
+    public string? Code { get; private set; }
 
-    public string Name { get; private set; } = string.Empty;
-    public string? Code { get; private set; } // optional, uppercased
-    public string? Area { get; private set; } // optional taxonomy (kept small in persistence)
+    /// <summary>Marks whether the subject is elective.</summary>
+    public bool IsElective { get; private set; }
+
+    /// <summary>FK to <see cref="StudyArea"/>.</summary>
+    public Guid StudyAreaId { get; private set; }
+
+    /// <summary>Navigation to owning StudyArea.</summary>
+    public StudyArea StudyArea { get; private set; } = null!;
 
     private Subject() { } // EF
 
-    /// <summary>Factory constructor that enforces invariants.</summary>
-    public Subject(Guid schoolYearId, string name, string? code = null, string? area = null)
+    public Subject(Guid id, string name, Guid studyAreaId, string? code = null, bool isElective = false)
     {
-        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId is required.", nameof(schoolYearId));
-
-        name = NormalizeName(name);
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required.", nameof(name));
-        if (name.Length > MaxNameLength) throw new ArgumentException($"Name must be <= {MaxNameLength} chars.", nameof(name));
-
-        code = NormalizeCode(code);
-        if (code is { Length: > MaxCodeLength }) throw new ArgumentException($"Code must be <= {MaxCodeLength} chars.", nameof(code));
-
-        Id = Guid.NewGuid();
-        SchoolYearId = schoolYearId;
-        Name = name;
-        Code = code;
-        Area = string.IsNullOrWhiteSpace(area) ? null : area.Trim();
-        SetCreated();
+        Id = id == default ? Guid.NewGuid() : id;
+        Rename(name);
+        SetStudyArea(studyAreaId);
+        Recode(code);
+        SetElective(isElective);
     }
 
-    /// <summary>Renames the subject.</summary>
-    public Subject Rename(string newName, string? modifiedBy = null)
+    /// <summary>Display name (unique, non-empty).</summary>
+
+    public void Rename(string name)
     {
-        newName = NormalizeName(newName);
-        if (string.IsNullOrWhiteSpace(newName)) throw new ArgumentException("Name is required.", nameof(newName));
-        if (newName.Length > MaxNameLength) throw new ArgumentException($"Name must be <= {MaxNameLength} chars.", nameof(newName));
-        Name = newName;
-        SetModified(modifiedBy);
-        return this;
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Subject name cannot be empty.", nameof(name));
+        Name = name.Trim();
     }
 
-    /// <summary>Sets or clears the short code (uppercased).</summary>
-    public Subject SetCode(string? code, string? modifiedBy = null)
+    public void Recode(string? code)
+        => Code = string.IsNullOrWhiteSpace(code) ? null : code!.Trim();
+
+    public void SetElective(bool elective) => IsElective = elective;
+
+    /// <summary>Sets the owning StudyArea (FK).</summary>
+    public void SetStudyArea(Guid studyAreaId)
     {
-        code = NormalizeCode(code);
-        if (code is { Length: > MaxCodeLength }) throw new ArgumentException($"Code must be <= {MaxCodeLength} chars.", nameof(code));
-        Code = code;
-        SetModified(modifiedBy);
-        return this;
+        if (studyAreaId == Guid.Empty)
+            throw new ArgumentException("StudyAreaId cannot be empty.", nameof(studyAreaId));
+        StudyAreaId = studyAreaId;
     }
-
-    /// <summary>Sets or clears the taxonomy area.</summary>
-    public Subject SetArea(string? area, string? modifiedBy = null)
-    {
-        Area = string.IsNullOrWhiteSpace(area) ? null : area.Trim();
-        SetModified(modifiedBy);
-        return this;
-    }
-
-    public override string ToString() => Code is null ? Name : $"{Code} - {Name}";
-
-    private static string NormalizeName(string value)
-    {
-        var t = value.Trim();
-        while (t.Contains("  ")) t = t.Replace("  ", " ");
-        return t;
-    }
-
-    private static string? NormalizeCode(string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToUpperInvariant();
 }

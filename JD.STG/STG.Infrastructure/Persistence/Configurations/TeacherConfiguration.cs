@@ -11,18 +11,11 @@ public sealed class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
         b.ToTable("Teachers");
         b.HasKey(x => x.Id);
 
-        b.Property(x => x.FullName)
-            .IsRequired()
-            .HasMaxLength(Teacher.MaxNameLength);
+        b.Property(x => x.FullName).HasMaxLength(120).IsRequired();
+        b.Property(x => x.Email).HasMaxLength(120);
+        b.Property(x => x.MaxWeeklyLoad);
+        b.Property(x => x.IsActive).HasDefaultValue(true).IsRequired();
 
-        b.Property(x => x.MaxDailyPeriods);
-        b.Property(x => x.Tags).HasMaxLength(Teacher.MaxTagsLength);
-
-        b.HasIndex(x => new { x.SchoolYearId, x.FullName });
-
-        b.HasOne<SchoolYear>()
-            .WithMany()
-            .HasForeignKey(x => x.SchoolYearId)
-            .OnDelete(DeleteBehavior.Restrict);
+        b.HasIndex(x => x.Email).IsUnique().HasFilter("[Email] IS NOT NULL");
     }
 }

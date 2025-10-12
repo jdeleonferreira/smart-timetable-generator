@@ -4,27 +4,37 @@ using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
+/// <summary>EF Core mapping for <see cref="StudyPlanEntry"/>.</summary>
 public sealed class StudyPlanEntryConfiguration : IEntityTypeConfiguration<StudyPlanEntry>
 {
     public void Configure(EntityTypeBuilder<StudyPlanEntry> b)
     {
-        b.ToTable("StudyPlanEntries");
+        b.ToTable("StudyPlanEntry");
         b.HasKey(x => x.Id);
 
+        b.Property(x => x.StudyPlanId).IsRequired();
+        b.Property(x => x.GradeId).IsRequired();
+        b.Property(x => x.SubjectId).IsRequired();
         b.Property(x => x.WeeklyHours).IsRequired();
+        b.Property(x => x.Notes).HasMaxLength(250);
 
-        b.HasIndex(x => new { x.StudyPlanId, x.SubjectId }).IsUnique();
+        // Unique per plan: (Grade, Subject)
+        b.HasIndex(x => new { x.StudyPlanId, x.GradeId, x.SubjectId }).IsUnique();
 
+        // Relationships
         b.HasOne<StudyPlan>()
-            .WithMany()
-            .HasForeignKey(x => x.StudyPlanId)
-            .OnDelete(DeleteBehavior.Cascade);
+         .WithMany(p => p.Entries)
+         .HasForeignKey(x => x.StudyPlanId)
+         .OnDelete(DeleteBehavior.Cascade); // delete plan -> delete entries
+
+        b.HasOne<Grade>()
+         .WithMany()
+         .HasForeignKey(x => x.GradeId)
+         .OnDelete(DeleteBehavior.Restrict);
 
         b.HasOne<Subject>()
-            .WithMany()
-            .HasForeignKey(x => x.SubjectId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        b.ToTable(t => t.HasCheckConstraint("CK_SPE_WeeklyHours", "WeeklyHours BETWEEN 1 AND 50"));
+         .WithMany()
+         .HasForeignKey(x => x.SubjectId)
+         .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -12,7 +12,6 @@ public interface ISchedulingOptimizer
     /// </summary>
     Task<Timetable> OptimizeAsync(
         Timetable seed,
-        IReadOnlyList<PeriodSlot> periodGrid,
         IReadOnlyList<Assignment> groupAssignments,
         SchedulingConfig? config,
         CancellationToken ct = default);

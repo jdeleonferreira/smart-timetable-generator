@@ -12,11 +12,9 @@ namespace STG.Domain.Entities;
 public sealed class SchedulingConfig : Entity
 {
     public Guid SchoolYearId { get; private set; }
-
     public int? MaxPeriodsPerDayTeacher { get; private set; }
     public int? MaxPeriodsPerDayGroup { get; private set; }
     public int? MaxConsecutiveSameSubject { get; private set; }
-
     public string? PrioritiesJson { get; private set; }
 
     private SchedulingConfig() { } // EF

@@ -8,21 +8,13 @@ public sealed class GradeConfiguration : IEntityTypeConfiguration<Grade>
 {
     public void Configure(EntityTypeBuilder<Grade> b)
     {
-        b.ToTable("Grades");
+        b.ToTable("Grade");
         b.HasKey(x => x.Id);
 
-        b.Property(x => x.Name)
-            .IsRequired()
-            .HasMaxLength(Grade.MaxNameLength);
+        b.Property(x => x.Name).HasMaxLength(32).IsRequired();
+        b.Property(x => x.Order).IsRequired();
 
-        b.Property(x => x.Order).HasDefaultValue((byte)0);
-
-        b.HasIndex(x => new { x.SchoolYearId, x.Name }).IsUnique();
-
-        b.HasOne<SchoolYear>()
-            .WithMany()
-            .HasForeignKey(x => x.SchoolYearId)
-            .OnDelete(DeleteBehavior.Restrict);
+        b.HasIndex(x => x.Name).IsUnique();
+        b.HasIndex(x => x.Order).IsUnique();
     }
 }
-

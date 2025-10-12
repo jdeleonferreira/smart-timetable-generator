@@ -4,46 +4,41 @@ using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Repositories;
 
-public sealed class TeacherRepository : ITeacherRepository
+internal sealed class TeacherRepository : ITeacherRepository
 {
     private readonly StgDbContext _db;
     public TeacherRepository(StgDbContext db) => _db = db;
 
-    public Task<Teacher?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        _db.Teachers.FirstOrDefaultAsync(t => t.Id == id, ct);
+    public async Task<Teacher?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => await _db.Teachers.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, ct);
 
-    public Task<Teacher?> GetByNameAsync(string name, CancellationToken ct = default) =>
-        _db.Teachers.FirstOrDefaultAsync(t => t.Name == name, ct);
+    public async Task<Teacher?> GetByEmailAsync(string email, CancellationToken ct = default)
+        => await _db.Teachers.AsNoTracking().FirstOrDefaultAsync(t => t.Email == email, ct);
 
-    public async Task<IReadOnlyList<Teacher>> ListAllAsync(CancellationToken ct = default) =>
-        await _db.Teachers
-            .AsNoTracking()
-            .OrderBy(t => t.Name)
+    public async Task<List<Teacher>> ListAllAsync(bool onlyActive, CancellationToken ct = default)
+        => await _db.Teachers.AsNoTracking()
+            .Where(t => !onlyActive || t.IsActive)
+            .OrderBy(t => t.FullName)
             .ToListAsync(ct);
 
-    /// <summary>
-    /// Returns teachers qualified for the given subject name.
-    /// Note: Subjects are stored as JSON (backing field) in MVP; this filters in-memory.
-    /// For large datasets, normalize to a join table or map by SubjectId.
-    /// </summary>
-    public async Task<IReadOnlyList<Teacher>> ListQualifiedForAsync(string subjectName, CancellationToken ct = default)
+    public async Task<Guid> AddAsync(Teacher entity, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(subjectName)) return Array.Empty<Teacher>();
-
-        // Due to JSON storage of _subjects, filter client-side (MVP trade-off).
-        var all = await _db.Teachers.AsNoTracking().ToListAsync(ct);
-        return all.Where(t => t.Subjects.Any(s => string.Equals(s, subjectName, StringComparison.OrdinalIgnoreCase)))
-                  .OrderBy(t => t.Name)
-                  .ToList();
+        await _db.Teachers.AddAsync(entity, ct);
+        await _db.SaveChangesAsync(ct);
+        return entity.Id;
     }
 
-    public Task AddAsync(Teacher entity, CancellationToken ct = default)
+    public async Task UpdateAsync(Teacher entity, CancellationToken ct = default)
     {
-        _db.Teachers.Add(entity);
-        return Task.CompletedTask;
+        _db.Teachers.Update(entity);
+        await _db.SaveChangesAsync(ct);
     }
 
-    public void Update(Teacher entity) => _db.Teachers.Update(entity);
-
-    public void Remove(Teacher entity) => _db.Teachers.Remove(entity);
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var tracked = await _db.Teachers.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (tracked is null) return;
+        _db.Teachers.Remove(tracked);
+        await _db.SaveChangesAsync(ct);
+    }
 }

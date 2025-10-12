@@ -8,26 +8,29 @@ public sealed class TimetableEntryConfiguration : IEntityTypeConfiguration<Timet
 {
     public void Configure(EntityTypeBuilder<TimetableEntry> b)
     {
-        b.ToTable("TimetableEntries");
+        b.ToTable("TimetableEntry");
         b.HasKey(x => x.Id);
 
-        b.HasIndex(x => new { x.TimetableId, x.DayOfWeek, x.PeriodNumber }).IsUnique();
+        b.Property(x => x.TimetableId).IsRequired();
+        b.Property(x => x.AssignmentId).IsRequired();
+        b.Property(x => x.DayOfWeek).IsRequired();
+        b.Property(x => x.PeriodIndex).IsRequired();
+        b.Property(x => x.Span).IsRequired();
+        b.Property(x => x.Room).HasMaxLength(40);
+        b.Property(x => x.Notes).HasMaxLength(250);
 
-        b.HasOne<Timetable>()
-            .WithMany()
-            .HasForeignKey(x => x.TimetableId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // No overlap in the same timetable at (Day, Period)
+        b.HasIndex(x => new { x.TimetableId, x.DayOfWeek, x.PeriodIndex }).IsUnique();
 
-        b.HasOne<Assignment>()
-            .WithMany()
-            .HasForeignKey(x => x.AssignmentId)
-            .OnDelete(DeleteBehavior.Restrict);
+        // Relations
+        b.HasOne(x => x.Timetable)
+         .WithMany(t => t.Entries)
+         .HasForeignKey(x => x.TimetableId)
+         .OnDelete(DeleteBehavior.Cascade); // delete timetable -> delete entries
 
-        b.HasOne<Room>()
-            .WithMany()
-            .HasForeignKey(x => x.RoomId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        b.ToTable(t => t.HasCheckConstraint("CK_TTE_PeriodNumber", "PeriodNumber BETWEEN 1 AND 20"));
+        b.HasOne(x => x.Assignment)
+         .WithMany()
+         .HasForeignKey(x => x.AssignmentId)
+         .OnDelete(DeleteBehavior.Restrict);
     }
 }

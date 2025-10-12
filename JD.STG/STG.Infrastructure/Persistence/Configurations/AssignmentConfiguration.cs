@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// src/STG.Infrastructure/Persistence/Configurations/AssignmentConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using STG.Domain.Entities;
 
@@ -8,18 +9,37 @@ public sealed class AssignmentConfiguration : IEntityTypeConfiguration<Assignmen
 {
     public void Configure(EntityTypeBuilder<Assignment> b)
     {
-        b.ToTable("Assignments");
+        b.ToTable("Assignment");
         b.HasKey(x => x.Id);
 
+        b.Property(x => x.GroupId).IsRequired();
+        b.Property(x => x.SubjectId).IsRequired();
+        b.Property(x => x.SchoolYearId).IsRequired();
         b.Property(x => x.WeeklyHours).IsRequired();
+        b.Property(x => x.Notes).HasMaxLength(300);
 
-        b.HasIndex(x => new { x.SchoolYearId, x.GroupId, x.SubjectId, x.TeacherId }).IsUnique();
+        // Uniqueness per (Group, Subject, Year)
+        b.HasIndex(x => new { x.GroupId, x.SubjectId, x.SchoolYearId }).IsUnique();
 
-        b.HasOne<SchoolYear>().WithMany().HasForeignKey(x => x.SchoolYearId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<Group>().WithMany().HasForeignKey(x => x.GroupId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<Teacher>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
+        // Relationships (restrict deletes to avoid accidental cascades)
+        b.HasOne(x => x.Group)
+         .WithMany()
+         .HasForeignKey(x => x.GroupId)
+         .OnDelete(DeleteBehavior.Restrict);
 
-        b.ToTable(t => t.HasCheckConstraint("CK_Assignment_WeeklyHours", "WeeklyHours BETWEEN 1 AND 50"));
+        b.HasOne(x => x.Subject)
+         .WithMany()
+         .HasForeignKey(x => x.SubjectId)
+         .OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(x => x.SchoolYear)
+         .WithMany()
+         .HasForeignKey(x => x.SchoolYearId)
+         .OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne<Teacher>()
+         .WithMany()
+         .HasForeignKey(x => x.TeacherId)
+         .OnDelete(DeleteBehavior.SetNull);
     }
 }
