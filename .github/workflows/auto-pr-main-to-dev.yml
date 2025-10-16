@@ -1,0 +1,53 @@
+# .github/workflows/auto-pr-main-to-dev.yml
+name: Auto PR main → dev
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure dev exists (optional)
+        run: |
+          git ls-remote --heads origin dev || {
+            echo "Branch dev no existe, se creará desde main"
+            git fetch origin main
+            git checkout -b dev origin/main
+            git push origin dev
+          }
+
+      - name: Detect commits behind
+        id: diff
+        run: |
+          git fetch origin dev main
+          BEHIND=$(git rev-list --right-only --count origin/dev...origin/main)
+          echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if nothing to sync
+        if: steps.diff.outputs.behind == '0'
+        run: echo "dev está al día con main, no se abre PR."
+
+      - name: Open/Update PR main → dev
+        if: steps.diff.outputs.behind != '0'
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: "main"
+          destination_branch: "dev"
+          pr_title: "Sync: main → dev"
+          pr_body: |
+            This PR keeps **dev** up to date with **main**.
+            Commits behind: ${{ steps.diff.outputs.behind }}
+          pr_label: "automation, sync"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
