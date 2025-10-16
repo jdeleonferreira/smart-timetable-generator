@@ -50,4 +50,21 @@ public sealed class StudyAreaService
 
     /// <summary>Returns the ordered list of StudyAreas for selection UIs.</summary>
     public Task<List<StudyArea>> ListAsync(CancellationToken ct = default) => _studyAreasRepository.ListAsync(ct);
+
+    public async Task UpdateAsync(Guid id, string name, string? code, byte orderNo, bool isActive, CancellationToken ct = default)
+    {
+        var current = await _studyAreasRepository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("StudyArea not found.");
+
+        // unicidad de nombre
+        var dup = await _studyAreasRepository.GetByNameAsync(name.Trim(), ct);
+        if (dup is not null && dup.Id != id)
+            throw new InvalidOperationException($"StudyArea '{name}' already exists.");
+
+        current.Rename(name.Trim());
+        current.Recode(code?.Trim());
+        current.Reorder(orderNo);
+        if (isActive) current.Activate(); else current.Deactivate();
+
+        await _studyAreasRepository.UpdateAsync(current, ct);
+    }
 }

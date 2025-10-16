@@ -56,4 +56,8 @@ public sealed class SchoolYearService
 
         await _schoolYearRepository.UpdateAsync(current, ct);
     }
+
+    public async Task<SchoolYear?> GetByYearAsync(int year, CancellationToken ct = default)
+        => await _schoolYearRepository.GetByYearAsync(year, ct);
+
 }

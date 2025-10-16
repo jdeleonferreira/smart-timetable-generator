@@ -11,6 +11,7 @@ public sealed class StgDbContext : DbContext
     public DbSet<AvailabilityBlock> AvailabilityBlocks => Set<AvailabilityBlock>();
     public DbSet<Grade> Grades => Set<Grade>();
     public DbSet<Group> Groups => Set<Group>();
+    public DbSet<PeriodSlot> PeriodSlots => Set<PeriodSlot>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<RunHistory> RunHistories => Set<RunHistory>();
     public DbSet<SchedulingConfig> SchedulingConfigs => Set<SchedulingConfig>();

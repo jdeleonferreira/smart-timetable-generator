@@ -98,8 +98,8 @@ public sealed class TimetableService
     }
 
     /// <summary>Removes a timeslot.</summary>
-    public Task RemoveSlotAsync(Guid entryId, CancellationToken ct = default)
-        => _timetableEntryRepository.DeleteAsync(entryId, ct);
+    public async Task RemoveSlotAsync(Guid entryId, CancellationToken ct = default)
+        => await _timetableEntryRepository.DeleteAsync(entryId, ct);
 
     private async Task EnsureNoOverlapAsync(Guid timetableId, byte dayOfWeek, byte periodIndex, byte span, CancellationToken ct, Guid? ignoreEntryId = null)
     {
@@ -117,5 +117,16 @@ public sealed class TimetableService
             if (overlap)
                 throw new InvalidOperationException($"Timeslot overlap at day {dayOfWeek}, period {p}.");
         }
+    }
+
+
+    public async Task<Timetable?> GetByIdAsync(Guid timetableId, CancellationToken ct = default)
+    => await _timetableRepository.GetByIdAsync(timetableId, ct);
+
+    public async Task<Timetable?> GetByGroupAndYearAsync(Guid groupId, int year, CancellationToken ct = default)
+    {
+        var sy = await _schoolYearRepository.GetByYearAsync(year, ct);
+        if (sy is null) return null;
+        return await _timetableRepository.GetByGroupAndYearAsync(groupId, sy.Id, ct);
     }
 }
