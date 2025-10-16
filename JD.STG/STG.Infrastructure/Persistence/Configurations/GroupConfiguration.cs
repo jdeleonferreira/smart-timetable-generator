@@ -2,25 +2,24 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using STG.Domain.Entities;
 
-
 namespace STG.Infrastructure.Persistence.Configurations;
 
-public class GroupConfiguration : IEntityTypeConfiguration<Group>
+public sealed class GroupConfiguration : IEntityTypeConfiguration<Group>
 {
-    public void Configure(EntityTypeBuilder<Group> builder)
+    public void Configure(EntityTypeBuilder<Group> b)
     {
-        builder.ToTable("Groups");
-        builder.HasKey(g => g.Id);
+        b.ToTable("Group");
+        b.HasKey(x => x.Id);
 
-        builder.Property(g => g.Grade)
-               .IsRequired()
-               .HasMaxLength(10);
+        b.Property(x => x.GradeId).IsRequired();
+        b.Property(x => x.Name).HasMaxLength(16).IsRequired();
 
-        builder.Property(g => g.Label)
-               .IsRequired()
-               .HasMaxLength(10);
+        // Unique per grade (GradeId, Name)
+        b.HasIndex(x => new { x.GradeId, x.Name }).IsUnique();
 
-        builder.Property(g => g.Size)
-               .IsRequired();
+        b.HasOne(x => x.Grade)
+         .WithMany() // groups are catalog-like; adjust if you add Grade.Groups
+         .HasForeignKey(x => x.GradeId)
+         .OnDelete(DeleteBehavior.Restrict);
     }
 }

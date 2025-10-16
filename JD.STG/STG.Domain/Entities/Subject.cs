@@ -2,19 +2,61 @@
 
 namespace STG.Domain.Entities;
 
-public class Subject : Entity
+/// <summary>
+/// Represents a school subject (e.g., Algebra, Biology) within a <see cref="StudyArea"/>.
+/// </summary>
+/// <remarks>
+/// Invariants:
+/// - Name: required (non-empty), unique at persistence.
+/// - StudyAreaId: required (cannot be Guid.Empty).
+/// - Code: optional, unique if present.
+/// </remarks>
+public sealed class Subject : Entity
 {
-    public string Name { get; private set; } = default!;
-    public bool NeedsLab { get; private set; }  // p.ej. Ciencias con laboratorio
-    public bool MustBeDouble { get; private set; } // si requiere bloques consecutivos
+    public string Name { get; private set; } = null!;
 
-    private Subject() { }
+    /// <summary>Optional short code (unique if present).</summary>
+    public string? Code { get; private set; }
 
-    public Subject(string name, bool needsLab = false, bool mustBeDouble = false)
+    /// <summary>Marks whether the subject is elective.</summary>
+    public bool IsElective { get; private set; }
+
+    /// <summary>FK to <see cref="StudyArea"/>.</summary>
+    public Guid StudyAreaId { get; private set; }
+
+    /// <summary>Navigation to owning StudyArea.</summary>
+    public StudyArea StudyArea { get; private set; } = null!;
+
+    private Subject() { } // EF
+
+    public Subject(Guid id, string name, Guid studyAreaId, string? code = null, bool isElective = false)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Subject name is required.");
+        Id = id == default ? Guid.NewGuid() : id;
+        Rename(name);
+        SetStudyArea(studyAreaId);
+        Recode(code);
+        SetElective(isElective);
+    }
+
+    /// <summary>Display name (unique, non-empty).</summary>
+
+    public void Rename(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Subject name cannot be empty.", nameof(name));
         Name = name.Trim();
-        NeedsLab = needsLab;
-        MustBeDouble = mustBeDouble;
+    }
+
+    public void Recode(string? code)
+        => Code = string.IsNullOrWhiteSpace(code) ? null : code!.Trim();
+
+    public void SetElective(bool elective) => IsElective = elective;
+
+    /// <summary>Sets the owning StudyArea (FK).</summary>
+    public void SetStudyArea(Guid studyAreaId)
+    {
+        if (studyAreaId == Guid.Empty)
+            throw new ArgumentException("StudyAreaId cannot be empty.", nameof(studyAreaId));
+        StudyAreaId = studyAreaId;
     }
 }

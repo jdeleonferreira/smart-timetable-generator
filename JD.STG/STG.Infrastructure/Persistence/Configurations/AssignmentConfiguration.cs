@@ -1,37 +1,45 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// src/STG.Infrastructure/Persistence/Configurations/AssignmentConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
-public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
+public sealed class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
 {
-    public void Configure(EntityTypeBuilder<Assignment> builder)
+    public void Configure(EntityTypeBuilder<Assignment> b)
     {
-        builder.ToTable("Assignments");
+        b.ToTable("Assignment");
+        b.HasKey(x => x.Id);
 
-        builder.HasKey(a => a.Id); // PK simple
+        b.Property(x => x.GroupId).IsRequired();
+        b.Property(x => x.SubjectId).IsRequired();
+        b.Property(x => x.SchoolYearId).IsRequired();
+        b.Property(x => x.WeeklyHours).IsRequired();
+        b.Property(x => x.Notes).HasMaxLength(300);
 
-        builder.Property(a => a.GroupCode).IsRequired().HasMaxLength(10);
-        builder.Property(a => a.Subject).IsRequired().HasMaxLength(100);
-        builder.Property(a => a.Teacher).IsRequired().HasMaxLength(120);
-        builder.Property(a => a.Room).IsRequired().HasMaxLength(50);
-        builder.Property(a => a.Blocks).IsRequired();
+        // Uniqueness per (Group, Subject, Year)
+        b.HasIndex(x => new { x.GroupId, x.SubjectId, x.SchoolYearId }).IsUnique();
 
-        var slot = builder.OwnsOne(a => a.Slot);
+        // Relationships (restrict deletes to avoid accidental cascades)
+        b.HasOne(x => x.Group)
+         .WithMany()
+         .HasForeignKey(x => x.GroupId)
+         .OnDelete(DeleteBehavior.Restrict);
 
-        slot.Property(s => s.Day)
-            .HasConversion<int>()
-            .HasColumnName("Slot_Day")
-            .IsRequired();
+        b.HasOne(x => x.Subject)
+         .WithMany()
+         .HasForeignKey(x => x.SubjectId)
+         .OnDelete(DeleteBehavior.Restrict);
 
-        slot.Property(s => s.Block)
-            .HasColumnName("Slot_Block")
-            .IsRequired();
+        b.HasOne(x => x.SchoolYear)
+         .WithMany()
+         .HasForeignKey(x => x.SchoolYearId)
+         .OnDelete(DeleteBehavior.Restrict);
 
-        // Índice SOLO dentro del owned type (opcional)
-        slot.HasIndex(s => new { s.Day, s.Block })
-            .HasDatabaseName("IX_Assignments_Slot");
+        b.HasOne<Teacher>()
+         .WithMany()
+         .HasForeignKey(x => x.TeacherId)
+         .OnDelete(DeleteBehavior.SetNull);
     }
 }
-

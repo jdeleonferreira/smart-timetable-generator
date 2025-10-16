@@ -1,39 +1,83 @@
-﻿using STG.Domain.Entities.Base;
-using STG.Domain.ValueObjects;
+﻿// src/STG.Domain/Entities/Assignment.cs
+using STG.Domain.Entities.Base;
 
 namespace STG.Domain.Entities;
 
-public sealed class Assignment: Entity
+/// <summary>
+/// Operational instantiation of teaching load for a Group in a SchoolYear:
+/// (Group, Subject, SchoolYear) with weekly hours and optional Teacher.
+/// </summary>
+/// <remarks>
+/// Invariants:
+/// - WeeklyHours in [0..60].
+/// - Unique per (GroupId, SubjectId, SchoolYearId) at persistence.
+/// - TeacherId is optional in MVP.
+/// </remarks>
+public sealed class Assignment : Entity
 {
-    public string GroupCode { get; }     // e.g., "6A"
-    public string Subject { get; }       // e.g., "Matemáticas"
-    public string Teacher { get; }       // e.g., "García"
-    public string Room { get; }          // e.g., "A101"
-    public TimeSlot Slot { get; }        // Día/Block
-    public int Blocks { get; }           // 1 si simple; 2 si doble
+    /// <summary>FK to <see cref="Group"/> catalog.</summary>
+    public Guid GroupId { get; private set; }
 
-    public Assignment() { }
+    /// <summary>FK to <see cref="Subject"/> catalog.</summary>
+    public Guid SubjectId { get; private set; }
 
-    public Assignment(string groupCode, string subject, string teacher, string room, TimeSlot slot, int blocks = 1)
+    /// <summary>FK to <see cref="SchoolYear"/> aggregate.</summary>
+    public Guid SchoolYearId { get; private set; }
+
+    /// <summary>Optional FK to Teacher (catalog/personnel).</summary>
+    public Guid? TeacherId { get; private set; }
+
+    /// <summary>Total weekly hours scheduled for this (Group, Subject, Year).</summary>
+    public byte WeeklyHours { get; private set; }
+
+    /// <summary>Optional free-text notes.</summary>
+    public string? Notes { get; private set; }
+
+    // Navigations (optional for queries; keep them if you use Includes)
+    public Group Group { get; private set; } = null!;
+    public Subject Subject { get; private set; } = null!;
+    // public Teacher Teacher { get; private set; } = null!; // add if/when Teacher entity exists
+    public SchoolYear SchoolYear { get; private set; } = null!;
+
+    private Assignment() { } // EF
+
+    public Assignment(Guid id, Guid groupId, Guid subjectId, Guid schoolYearId, byte weeklyHours, Guid? teacherId = null, string? notes = null)
     {
-        if (string.IsNullOrWhiteSpace(groupCode)) throw new ArgumentException("GroupCode required.");
-        if (string.IsNullOrWhiteSpace(subject)) throw new ArgumentException("Subject required.");
-        if (string.IsNullOrWhiteSpace(teacher)) throw new ArgumentException("Teacher required.");
-        if (string.IsNullOrWhiteSpace(room)) throw new ArgumentException("Room required.");
-        if (blocks <= 0) throw new ArgumentOutOfRangeException(nameof(blocks));
-
-        GroupCode = groupCode.Trim();
-        Subject = subject.Trim();
-        Teacher = teacher.Trim();
-        Room = room.Trim();
-        Slot = slot;
-        Blocks = blocks;
+        Id = id == default ? Guid.NewGuid() : id;
+        SetGroup(groupId);
+        SetSubject(subjectId);
+        SetSchoolYear(schoolYearId);
+        SetWeeklyHours(weeklyHours);
+        SetTeacher(teacherId);
+        SetNotes(notes);
     }
 
-    /// <summary>Devuelve los slots ocupados por este bloque (p.ej. doble cubre Block y Block+1).</summary>
-    public IEnumerable<TimeSlot> CoveredSlots()
+    // Guards / behavior
+    public void SetGroup(Guid groupId)
     {
-        for (int i = 0; i < Blocks; i++)
-            yield return new TimeSlot(Slot.Day, Slot.Block + i);
+        if (groupId == Guid.Empty) throw new ArgumentException("GroupId cannot be empty.", nameof(groupId));
+        GroupId = groupId;
     }
+    public void SetSubject(Guid subjectId)
+    {
+        if (subjectId == Guid.Empty) throw new ArgumentException("SubjectId cannot be empty.", nameof(subjectId));
+        SubjectId = subjectId;
+    }
+    public void SetSchoolYear(Guid schoolYearId)
+    {
+        if (schoolYearId == Guid.Empty) throw new ArgumentException("SchoolYearId cannot be empty.", nameof(schoolYearId));
+        SchoolYearId = schoolYearId;
+    }
+    public void SetWeeklyHours(byte weeklyHours)
+    {
+        if (weeklyHours > 60) throw new ArgumentOutOfRangeException(nameof(weeklyHours), "WeeklyHours must be between 0 and 60.");
+        WeeklyHours = weeklyHours;
+    }
+    public void SetTeacher(Guid? teacherId)
+    {
+        if (teacherId.HasValue && teacherId.Value == Guid.Empty)
+            throw new ArgumentException("TeacherId cannot be empty when provided.", nameof(teacherId));
+        TeacherId = teacherId;
+    }
+    public void SetNotes(string? notes) => Notes = string.IsNullOrWhiteSpace(notes) ? null : notes!.Trim();
 }

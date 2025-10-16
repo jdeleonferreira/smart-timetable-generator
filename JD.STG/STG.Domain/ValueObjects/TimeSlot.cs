@@ -1,18 +1,52 @@
 ﻿namespace STG.Domain.ValueObjects;
 
-public class TimeSlot
+/// <summary>
+/// Represents a position in the timetable grid (Day + Period number).
+/// This is a Value Object: equality is determined by its content, not by reference.
+/// </summary>
+public sealed class TimeSlot : IEquatable<TimeSlot>
 {
-    public DayOfWeek Day { get; private set; }
-    public int Block { get; private set; }
+    /// <summary>
+    /// Day of the week (e.g. Monday, Tuesday...).
+    /// </summary>
+    public DayOfWeek Day { get; }
 
-    private TimeSlot() { }
+    /// <summary>
+    /// Period number within the day (1..12 typically).
+    /// </summary>
+    public byte Block { get; }
 
-    public TimeSlot(DayOfWeek day, int block)
+    private TimeSlot() { } // Required for EF Core materialization
+
+    public TimeSlot(DayOfWeek day, byte block)
     {
-        if (block < 1) throw new ArgumentOutOfRangeException(nameof(block), "Block must be >= 1");
+        if (block is 0 or > 12)
+            throw new ArgumentOutOfRangeException(nameof(block), "Block must be between 1 and 12.");
+
         Day = day;
         Block = block;
     }
 
-    public static TimeSlot Of(DayOfWeek day, int block) => new(day, block);
+    /// <summary>
+    /// Factory method for cleaner construction.
+    /// </summary>
+    public static TimeSlot Of(DayOfWeek day, byte block) => new(day, block);
+
+    // ---------------------------
+    // Value Equality
+    // ---------------------------
+    public bool Equals(TimeSlot? other)
+    {
+        if (other is null) return false;
+        return Day == other.Day && Block == other.Block;
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as TimeSlot);
+
+    public override int GetHashCode() => HashCode.Combine((int)Day, Block);
+
+    public static bool operator ==(TimeSlot? a, TimeSlot? b) => a?.Equals(b) ?? b is null;
+    public static bool operator !=(TimeSlot? a, TimeSlot? b) => !(a == b);
+
+    public override string ToString() => $"{Day} P{Block}";
 }

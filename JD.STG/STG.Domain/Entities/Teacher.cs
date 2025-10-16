@@ -2,25 +2,68 @@
 
 namespace STG.Domain.Entities;
 
-public class Teacher : Entity
+/// <summary>
+/// Represents a teacher/personnel who can be assigned to class Assignments.
+/// </summary>
+/// <remarks>
+/// Invariants:
+/// - FullName: required (non-empty).
+/// - Email: optional, unique when present.
+/// - IsActive: soft on/off for scheduling/selection.
+/// - MaxWeeklyLoad: optional guard for scheduling (MVP default null).
+/// </remarks>
+public sealed class Teacher : Entity
 {
-    public string Name { get; private set; } = default!;
-    /// <summary>Materias que puede dictar (por nombre de Subject).</summary>
-    public HashSet<string> Subjects { get; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Display name.</summary>
+    public string FullName { get; private set; } = null!;
 
-    private Teacher() { }
+    /// <summary>Optional unique email.</summary>
+    public string? Email { get; private set; }
 
-    public Teacher(string name, IEnumerable<string>? subjects = null)
+    /// <summary>Optional weekly hours cap for scheduling.</summary>
+    public byte? MaxWeeklyLoad { get; private set; }
+
+    /// <summary>Soft on/off flag.</summary>
+    public bool IsActive { get; private set; }
+
+    private Teacher() { } // EF
+
+    public Teacher(Guid id, string fullName, string? email = null, byte? maxWeeklyLoad = null, bool isActive = true)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Teacher name is required.");
-        Name = name.Trim();
-        if (subjects != null)
-            foreach (var s in subjects) AddSubject(s);
+        Id = id == default ? Guid.NewGuid() : id;
+        Rename(fullName);
+        SetEmail(email);
+        SetMaxWeeklyLoad(maxWeeklyLoad);
+        IsActive = isActive;
     }
 
-    public bool AddSubject(string subject)
+
+    public void Rename(string fullName)
     {
-        if (string.IsNullOrWhiteSpace(subject)) return false;
-        return Subjects.Add(subject.Trim());
+        if (string.IsNullOrWhiteSpace(fullName))
+            throw new ArgumentException("Full name cannot be empty.", nameof(fullName));
+        FullName = fullName.Trim();
     }
+
+    public void SetEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            Email = null;
+            return;
+        }
+        var trimmed = email.Trim();
+        if (!trimmed.Contains("@") || trimmed.StartsWith("@") || trimmed.EndsWith("@"))
+            throw new ArgumentException("Invalid email format.", nameof(email));
+        Email = trimmed;
+    }
+
+    public void SetMaxWeeklyLoad(byte? hours)
+    {
+        if (hours is > 40) throw new ArgumentOutOfRangeException(nameof(hours), "MaxWeeklyLoad must be <= 40.");
+        MaxWeeklyLoad = hours;
+    }
+
+    public void Activate() => IsActive = true;
+    public void Deactivate() => IsActive = false;
 }

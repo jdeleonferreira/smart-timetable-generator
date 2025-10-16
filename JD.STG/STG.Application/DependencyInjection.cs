@@ -9,10 +9,15 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration config)
     {
 
-        services.AddScoped<CurriculumService>();
-        services.AddScoped<ResourceService>();
-        services.AddScoped<SchedulerService>();
-
+        services.AddScoped<AssignmentService>();
+        services.AddScoped<GradeService>();
+        services.AddScoped<GroupService>();
+        services.AddScoped<SchoolYearService>();
+        services.AddScoped<StudyAreaService>();
+        services.AddScoped<StudyPlanEntryService>();
+        services.AddScoped<StudyPlanService>();
+        services.AddScoped<SubjectService>();
+        services.AddScoped<TeacherService>();
 
         return services;
     }

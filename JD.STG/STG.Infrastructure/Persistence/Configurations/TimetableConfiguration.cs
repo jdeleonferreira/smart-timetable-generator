@@ -4,25 +4,31 @@ using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
-public class TimetableConfiguration : IEntityTypeConfiguration<Timetable>
+public sealed class TimetableConfiguration : IEntityTypeConfiguration<Timetable>
 {
-    public void Configure(EntityTypeBuilder<Timetable> builder)
+    public void Configure(EntityTypeBuilder<Timetable> b)
     {
-        builder.ToTable("Timetables");
-        builder.HasKey(t => t.Id);
+        b.ToTable("Timetable");
+        b.HasKey(x => x.Id);
 
-        builder.Property(t => t.Year).IsRequired();
+        b.Property(x => x.GroupId).IsRequired();
+        b.Property(x => x.SchoolYearId).IsRequired();
+        b.Property(x => x.Name).HasMaxLength(80).IsRequired();
+        b.Property(x => x.Notes).HasMaxLength(500);
 
-        builder.OwnsOne(t => t.WeekConfig);
+        // Unique per (Group, SchoolYear)
+        b.HasIndex(x => new { x.GroupId, x.SchoolYearId }).IsUnique();
 
-        builder
-            .HasMany(t => t.Assignments)
-            .WithOne()
-            .OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Group)
+         .WithMany()
+         .HasForeignKey(x => x.GroupId)
+         .OnDelete(DeleteBehavior.Restrict);
 
-        // Indica el backing field y el modo de acceso
-        var nav = builder.Metadata.FindNavigation(nameof(Timetable.Assignments));
-        nav!.SetField("_assignments");
-        nav.SetPropertyAccessMode(PropertyAccessMode.Field);
+        b.HasOne(x => x.SchoolYear)
+         .WithMany()
+         .HasForeignKey(x => x.SchoolYearId)
+         .OnDelete(DeleteBehavior.Restrict);
+
+        b.Navigation(x => x.Entries).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

@@ -4,23 +4,18 @@ using STG.Domain.Entities;
 
 namespace STG.Infrastructure.Persistence.Configurations;
 
-public class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
+public sealed class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
 {
-    public void Configure(EntityTypeBuilder<Teacher> builder)
+    public void Configure(EntityTypeBuilder<Teacher> b)
     {
-        builder.ToTable("Teachers");
-        builder.HasKey(t => t.Id);
+        b.ToTable("Teachers");
+        b.HasKey(x => x.Id);
 
-        builder.Property(t => t.Name)
-               .IsRequired()
-               .HasMaxLength(120);
+        b.Property(x => x.FullName).HasMaxLength(120).IsRequired();
+        b.Property(x => x.Email).HasMaxLength(120);
+        b.Property(x => x.MaxWeeklyLoad);
+        b.Property(x => x.IsActive).HasDefaultValue(true).IsRequired();
 
-        // Convertimos el HashSet de Subjects a JSON
-        builder.Property(t => t.Subjects)
-               .HasConversion(
-                   v => string.Join(',', v),               // to DB
-                   v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                         .ToHashSet(StringComparer.OrdinalIgnoreCase)
-               );
+        b.HasIndex(x => x.Email).IsUnique().HasFilter("[Email] IS NOT NULL");
     }
 }

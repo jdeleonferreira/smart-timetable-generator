@@ -1,28 +1,47 @@
-﻿using STG.Domain.Entities.Base;
-
+﻿// src/STG.Domain/Entities/Group.cs
+using STG.Domain.Entities.Base;
 
 namespace STG.Domain.Entities;
 
 /// <summary>
-/// Un grupo/curso (e.g., "6A") con tamaño de estudiantes.
+/// Represents a class division within a Grade (e.g., 7A, 7B).
 /// </summary>
-public class Group : Entity
+/// <remarks>
+/// Invariants:
+/// - Name: required (non-empty).
+/// - (GradeId, Name) must be unique at persistence level.
+/// </remarks>
+public sealed class Group : Entity
 {
-    public string Grade { get; private set; } = default!;   // "6", "7", "10", etc.
-    public string Label { get; private set; } = default!;   // "A", "B", etc. (opcional)
-    public int Size { get; private set; }
+    /// <summary>FK to <see cref="Grade"/> the group belongs to.</summary>
+    public Guid GradeId { get; private set; }
 
-    private Group() { }
+    /// <summary>Navigation to parent Grade.</summary>
+    public Grade Grade { get; private set; } = null!;
 
-    public Group(string grade, string label, int size)
+    /// <summary>Short label (e.g., "A", "B", "7A"). Unique per grade.</summary>
+    public string Name { get; private set; } = null!;
+
+    private Group() { } // EF
+
+    public Group(Guid id, Guid gradeId, string name)
     {
-        if (string.IsNullOrWhiteSpace(grade)) throw new ArgumentException("Grade is required.");
-        if (string.IsNullOrWhiteSpace(label)) label = "A";
-        if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size));
-        Grade = grade.Trim();
-        Label = label.Trim();
-        Size = size;
+        Id = id == default ? Guid.NewGuid() : id;
+        SetGrade(gradeId);
+        Rename(name);
     }
 
-    public string Code => $"{Grade}{Label}";
+    public void Rename(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Group name cannot be empty.", nameof(name));
+        Name = name.Trim();
+    }
+
+    public void SetGrade(Guid gradeId)
+    {
+        if (gradeId == Guid.Empty)
+            throw new ArgumentException("GradeId cannot be empty.", nameof(gradeId));
+        GradeId = gradeId;
+    }
 }
