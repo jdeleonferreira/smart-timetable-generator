@@ -1,5 +1,5 @@
 # .github/workflows/auto-pr-main-to-dev.yml
-name: Auto PR main → dev
+name: Auto PR main → dev (native)
 
 on:
   push:
@@ -14,10 +14,8 @@ jobs:
   open-pr:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
 
       - name: Ensure dev exists (optional)
         run: |
@@ -39,15 +37,30 @@ jobs:
         if: steps.diff.outputs.behind == '0'
         run: echo "dev está al día con main, no se abre PR."
 
-      - name: Open/Update PR main → dev
+      - name: Create PR if needed
         if: steps.diff.outputs.behind != '0'
-        uses: repo-sync/pull-request@v2
+        uses: actions/github-script@v7
         with:
-          source_branch: "main"
-          destination_branch: "dev"
-          pr_title: "Sync: main → dev"
-          pr_body: |
-            This PR keeps **dev** up to date with **main**.
-            Commits behind: ${{ steps.diff.outputs.behind }}
-          pr_label: "automation, sync"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const head = "main";
+            const base = "dev";
+            // 1) ¿Ya existe un PR abierto main → dev?
+            const prs = await github.rest.pulls.list({
+              owner, repo, state: "open", head: `${owner}:${head}`, base
+            });
+            if (prs.data.length > 0) {
+              core.info(`PR existente #${prs.data[0].number} main → dev`);
+              return;
+            }
+            // 2) Crear nuevo PR
+            const pr = await github.rest.pulls.create({
+              owner, repo,
+              title: "Sync: main → dev",
+              head, base,
+              body: `This PR keeps **dev** up to date with **main**.\nCommits behind: ${process.env.BEHIND || ''}`
+            });
+            core.info(`PR creado #${pr.data.number}`);
+          env:
+            BEHIND: ${{ steps.diff.outputs.behind }}
