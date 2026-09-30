@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Application.UseCases.StudyPlans.Common;
 using SmartTimetableGenerator.Domain.Areas;
 using SmartTimetableGenerator.Domain.Campuses;
@@ -10,6 +11,7 @@ namespace SmartTimetableGenerator.Application.UseCases.StudyPlans.Commands.Updat
 /// <summary>
 /// Cambia la IH semanal y la forma de dictar una asignatura del plan.
 /// </summary>
+[Authorize(Roles = Roles.Managers)]
 public sealed record UpdateStudyPlanItemCommand(
     DeliveryMode DeliveryMode,
     int WeeklyHours,
@@ -24,7 +26,7 @@ public sealed record UpdateStudyPlanItemCommand(
     public Guid ItemId { get; set; }
 }
 
-internal sealed class UpdateStudyPlanItemCommandHandler(IApplicationDbContext dbContext)
+internal sealed class UpdateStudyPlanItemCommandHandler(IApplicationDbContext dbContext, ICurrentUserService currentUser)
     : IRequestHandler<UpdateStudyPlanItemCommand, ErrorOr<Success>>
 {
     public async Task<ErrorOr<Success>> Handle(UpdateStudyPlanItemCommand request, CancellationToken cancellationToken)
@@ -32,6 +34,9 @@ internal sealed class UpdateStudyPlanItemCommandHandler(IApplicationDbContext db
         var plan = await StudyPlanReferences.LoadPlanAsync(dbContext, request.StudyPlanId, cancellationToken);
         if (plan is null)
             return StudyPlanErrors.NotFound;
+
+        if (currentUser.EnsureCanManageCampus(plan.CampusId) is { } forbidden)
+            return forbidden;
 
         var targetShiftId = request.TargetShiftId is { } shift ? ShiftId.From(shift) : (ShiftId?)null;
         var integratedInto = request.IntegratedIntoSubjectId is { } into ? SubjectId.From(into) : (SubjectId?)null;

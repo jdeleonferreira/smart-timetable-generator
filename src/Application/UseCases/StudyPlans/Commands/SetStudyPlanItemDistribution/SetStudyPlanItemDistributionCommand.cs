@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Application.UseCases.StudyPlans.Common;
 using SmartTimetableGenerator.Domain.Spaces;
 using SmartTimetableGenerator.Domain.StudyPlans;
@@ -10,6 +11,7 @@ namespace SmartTimetableGenerator.Application.UseCases.StudyPlans.Commands.SetSt
 /// Define cómo se reparten las horas de una asignatura en la semana: máximo por día, máximo seguidas
 /// (2 = bloques dobles) y el tipo de espacio que requiere (ej.: sala de informática). Null = sin restricción propia.
 /// </summary>
+[Authorize(Roles = Roles.Managers)]
 public sealed record SetStudyPlanItemDistributionCommand(
     int? MaxHoursPerDay,
     int? MaxConsecutiveHours,
@@ -22,7 +24,7 @@ public sealed record SetStudyPlanItemDistributionCommand(
     public Guid ItemId { get; set; }
 }
 
-internal sealed class SetStudyPlanItemDistributionCommandHandler(IApplicationDbContext dbContext)
+internal sealed class SetStudyPlanItemDistributionCommandHandler(IApplicationDbContext dbContext, ICurrentUserService currentUser)
     : IRequestHandler<SetStudyPlanItemDistributionCommand, ErrorOr<Success>>
 {
     public async Task<ErrorOr<Success>> Handle(SetStudyPlanItemDistributionCommand request, CancellationToken cancellationToken)
@@ -30,6 +32,9 @@ internal sealed class SetStudyPlanItemDistributionCommandHandler(IApplicationDbC
         var plan = await StudyPlanReferences.LoadPlanAsync(dbContext, request.StudyPlanId, cancellationToken);
         if (plan is null)
             return StudyPlanErrors.NotFound;
+
+        if (currentUser.EnsureCanManageCampus(plan.CampusId) is { } forbidden)
+            return forbidden;
 
         var result = plan.SetItemDistribution(StudyPlanItemId.From(request.ItemId),
             request.MaxHoursPerDay, request.MaxConsecutiveHours, request.RequiredSpaceType);

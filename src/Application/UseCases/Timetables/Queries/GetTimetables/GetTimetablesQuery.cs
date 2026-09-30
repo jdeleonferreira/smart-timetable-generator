@@ -1,4 +1,6 @@
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
+using SmartTimetableGenerator.Domain.Timetables;
 
 namespace SmartTimetableGenerator.Application.UseCases.Timetables.Queries.GetTimetables;
 
@@ -14,7 +16,7 @@ public sealed record TimetableSummaryDto(
     int LessonCount,
     DateTimeOffset? PublishedAt);
 
-internal sealed class GetTimetablesQueryHandler(IApplicationDbContext dbContext)
+internal sealed class GetTimetablesQueryHandler(IApplicationDbContext dbContext, ICurrentUserService currentUser)
     : IRequestHandler<GetTimetablesQuery, IReadOnlyList<TimetableSummaryDto>>
 {
     public async Task<IReadOnlyList<TimetableSummaryDto>> Handle(GetTimetablesQuery request, CancellationToken cancellationToken)
@@ -24,7 +26,10 @@ internal sealed class GetTimetablesQueryHandler(IApplicationDbContext dbContext)
             .Include(t => t.Lessons)
             .ToListAsync(cancellationToken);
 
+        var seeDrafts = currentUser.CanSeeDrafts();
+
         return timetables
+            .Where(t => seeDrafts || t.Status == TimetableStatus.Published)
             .Where(t => request.AcademicYearId is null || t.AcademicYearId.Value == request.AcademicYearId)
             .Where(t => request.CampusId is null || t.CampusId.Value == request.CampusId)
             .OrderByDescending(t => t.CreatedAt)

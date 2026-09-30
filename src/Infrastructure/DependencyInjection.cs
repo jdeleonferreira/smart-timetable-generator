@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using SmartTimetableGenerator.Application.Common.Interfaces;
 using SmartTimetableGenerator.Infrastructure.Persistence;
 using SmartTimetableGenerator.Infrastructure.BackgroundJobs;
+using SmartTimetableGenerator.Infrastructure.Identity;
 using SmartTimetableGenerator.Infrastructure.Persistence.Interceptors;
 using SmartTimetableGenerator.Infrastructure.Scheduling;
 
@@ -34,6 +35,9 @@ public static class DependencyInjection
         services.AddScoped<DispatchDomainEventsInterceptor>();
 
         services.AddSingleton(TimeProvider.System);
+
+        // Usuarios, roles y tokens JWT
+        services.AddJwtAuthentication(builder.Configuration);
 
         // Generación de horarios: motor CP-SAT y trabajador en segundo plano
         services.AddScoped<ITimetableSolver, CpSatTimetableSolver>();

@@ -1,4 +1,5 @@
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.Campuses;
 using SmartTimetableGenerator.Domain.DayTypes;
 using SmartTimetableGenerator.Domain.Timetables;
@@ -31,7 +32,7 @@ public sealed record LessonDto(
     string? SpaceName,
     bool IsLocked);
 
-internal sealed class GetTimetableLessonsQueryHandler(IApplicationDbContext dbContext)
+internal sealed class GetTimetableLessonsQueryHandler(IApplicationDbContext dbContext, ICurrentUserService currentUser)
     : IRequestHandler<GetTimetableLessonsQuery, ErrorOr<IReadOnlyList<LessonDto>>>
 {
     public async Task<ErrorOr<IReadOnlyList<LessonDto>>> Handle(GetTimetableLessonsQuery request, CancellationToken cancellationToken)
@@ -40,7 +41,7 @@ internal sealed class GetTimetableLessonsQueryHandler(IApplicationDbContext dbCo
             .AsNoTracking()
             .WithSpecification(TimetableSpec.ById(TimetableId.From(request.TimetableId)))
             .FirstOrDefaultAsync(cancellationToken);
-        if (timetable is null)
+        if (timetable is null || (timetable.Status != TimetableStatus.Published && !currentUser.CanSeeDrafts()))
             return TimetableErrors.NotFound;
 
         var campus = await dbContext.Campuses.AsNoTracking()

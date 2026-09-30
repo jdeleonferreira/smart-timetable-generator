@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SmartTimetableGenerator.Application.Common.Interfaces;
 using SmartTimetableGenerator.Domain.AcademicYears;
@@ -15,13 +16,17 @@ using SmartTimetableGenerator.Domain.TeachingAssignments;
 using SmartTimetableGenerator.Domain.TimetableGeneration;
 using SmartTimetableGenerator.Domain.Timetables;
 using SmartTimetableGenerator.Domain.TrainingProjects;
+using SmartTimetableGenerator.Infrastructure.Identity;
 using SmartTimetableGenerator.Infrastructure.Persistence.Configuration;
 using System.Reflection;
 
 namespace SmartTimetableGenerator.Infrastructure.Persistence;
 
+/// <summary>
+/// Base de datos de la aplicación: agregados del dominio y cuentas de usuario (ASP.NET Identity).
+/// </summary>
 public class ApplicationDbContext(DbContextOptions options)
-    : DbContext(options), IApplicationDbContext
+    : IdentityDbContext<ApplicationUser>(options), IApplicationDbContext
 {
     public DbSet<Institution> Institutions => AggregateRootSet<Institution>();
     public DbSet<Campus> Campuses => AggregateRootSet<Campus>();
@@ -40,9 +45,10 @@ public class ApplicationDbContext(DbContextOptions options)
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-
+        // Primero Identity, luego las configuraciones propias (incluida la de ApplicationUser)
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

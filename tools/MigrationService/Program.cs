@@ -1,6 +1,7 @@
 using MigrationService;
 using MigrationService.Initializers;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Infrastructure.Identity;
 using SmartTimetableGenerator.Infrastructure.Persistence;
 using SmartTimetableGenerator.Infrastructure.Persistence.Interceptors;
 
@@ -15,6 +16,8 @@ builder.Services
     .WithTracing(tracing => tracing.AddSource(Worker.ActivitySourceName));
 
 builder.Services.AddScoped<ApplicationDbContextInitializer>();
+builder.Services.AddScoped<IdentityInitializer>();
+builder.Services.AddIdentityStores();
 builder.Services.AddScoped<EntitySaveChangesInterceptor>();
 builder.Services.AddScoped<ICurrentUserService, MigrationUserService>();
 builder.Services.AddSingleton(TimeProvider.System);

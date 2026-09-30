@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.Areas;
 
 namespace SmartTimetableGenerator.Application.UseCases.Areas.Commands.UpdateArea;
@@ -7,6 +8,7 @@ namespace SmartTimetableGenerator.Application.UseCases.Areas.Commands.UpdateArea
 /// <summary>
 /// Cambia el nombre u orden de un área.
 /// </summary>
+[Authorize(Roles = Roles.Admin)]
 public sealed record UpdateAreaCommand(string Name, int Order) : IRequest<ErrorOr<Success>>
 {
     [JsonIgnore]
