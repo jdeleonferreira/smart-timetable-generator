@@ -183,7 +183,7 @@ jobs:
           dotnet new tool-manifest
           dotnet tool install Microsoft.OpenApi.Kiota
         fi
-        manifest=$(ls .config/dotnet-tools.json dotnet-tools.json 2>/dev/null | head -1)
+        if [ -f .config/dotnet-tools.json ]; then manifest=.config/dotnet-tools.json; else manifest=dotnet-tools.json; fi
         cd src/WebClient
         npm run api:generate 2>&1 | tee kiota-output.txt || { grep -iE "error|fail" kiota-output.txt | head -5 | sed 's/^/::error title=Kiota::/'; exit 1; }
         cd ../..
