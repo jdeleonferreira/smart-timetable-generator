@@ -42,8 +42,8 @@ jobs:
       shell: bash
       run: |
         # Publica las líneas relevantes como anotaciones (visibles en el resumen de la ejecución)
-        grep -E "failed|Failed|error|Error|zero tests|Zero tests|exit code|Assert|Expected|Esperado" test-output.txt \
-          | grep -v "^\s*$" | head -40 > failures.txt || true
+        grep -E -A6 "failed|Failed|error|Error|zero tests|Zero tests|exit code|Expected|Esperado|types failed" test-output.txt \
+          | grep -v "^\s*$" | grep -v "^\s*at " | head -40 > failures.txt || true
         {
           echo "## Pruebas con fallos"
           echo '```'

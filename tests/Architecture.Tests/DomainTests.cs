@@ -18,7 +18,8 @@ public class DomainModel(ITestOutputHelper output) : TestBase
         // Arrange
         var domainModels = Types.InAssembly(DomainAssembly)
             .That()
-            .DoNotResideInNamespaceContaining("Common")
+            .ResideInNamespaceStartingWith("SmartTimetableGenerator.Domain")   // excluye tipos generados por el compilador
+            .And().DoNotResideInNamespaceContaining("Common")
             .And().DoNotHaveNameMatching(".*Id.*")
             .And().DoNotHaveNameMatching(".*Vogen.*")
             .And().DoNotHaveName("ThrowHelper")
