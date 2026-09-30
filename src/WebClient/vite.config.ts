@@ -15,6 +15,7 @@ export default defineConfig({
   plugins: [react()],
   server: { proxy, port: process.env.PORT ? Number(process.env.PORT) : 5173 },
   preview: { proxy, port: 4173 },
+  build: { chunkSizeWarningLimit: 1200 },
   test: {
     environment: 'jsdom',
     globals: true,
