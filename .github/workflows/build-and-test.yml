@@ -48,8 +48,8 @@ jobs:
       shell: bash
       run: |
         touch test-output.txt
-        awk '/Test run summary/ {line=$0; n=5; next} n>0 {line=line " " $0; n--; if (n==0) print line}' test-output.txt \
-          | tr -s ' ' | sed 's#[^ ]*/bin/Release/[^/]*/##' | while IFS= read -r l; do echo "::notice title=Pruebas::$l"; done
+        grep -iE "summary|total|succeeded|passed|failed" test-output.txt | grep -v "^\s*at " | tr -s ' ' \
+          | sed 's#/home/runner/work/[^ ]*/##' | head -12 | while IFS= read -r l; do echo "::notice title=Pruebas::$l"; done
 
     - name: Report failures
       if: failure()
