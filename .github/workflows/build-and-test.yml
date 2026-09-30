@@ -43,6 +43,14 @@ jobs:
         set -o pipefail
         dotnet test --no-build --no-restore --configuration Release -- --report-xunit-trx 2>&1 | tee test-output.txt
 
+    - name: Resumen de pruebas
+      if: success() || failure()
+      shell: bash
+      run: |
+        touch test-output.txt
+        awk '/Test run summary/ {line=$0; n=5; next} n>0 {line=line " " $0; n--; if (n==0) print line}' test-output.txt \
+          | tr -s ' ' | sed 's#[^ ]*/bin/Release/[^/]*/##' | while IFS= read -r l; do echo "::notice title=Pruebas::$l"; done
+
     - name: Report failures
       if: failure()
       shell: bash
