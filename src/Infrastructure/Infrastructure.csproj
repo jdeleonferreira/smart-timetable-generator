@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SmartTimetableGenerator.Infrastructure</RootNamespace>
+    <AssemblyName>SmartTimetableGenerator.Infrastructure</AssemblyName>
+    <IsAspireSharedProject>true</IsAspireSharedProject>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Application\Application.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+    
+    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer"/>
+    <PackageReference Include="EntityFrameworkCore.Exceptions.SqlServer" />
+    <PackageReference Include="Google.OrTools" />
+    <!-- TODO: Remove when Aspire updates KubernetesClient dependency to fix https://github.com/advisories/GHSA-w7r3-mgwf-4mqq -->
+    <PackageReference Include="KubernetesClient" />
+
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience"/>
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery"/>
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+  </ItemGroup>
+  
+</Project>

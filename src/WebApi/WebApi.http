@@ -1,0 +1,49 @@
+@baseUrl = https://localhost:7255/api
+
+### 1. Año lectivo y periodos (copie academicYearId y el id del Periodo 1)
+GET {{baseUrl}}/catalog/academic-years
+
+### 2. Sedes (copie campusId)
+GET {{baseUrl}}/catalog/campuses
+
+@academicYearId = pegue-aqui-el-id
+@campusId = pegue-aqui-el-id
+@periodId = pegue-aqui-el-id
+
+### 3. Crear el horario en borrador (copie el id de la respuesta)
+POST {{baseUrl}}/timetables
+Content-Type: application/json
+
+{
+  "academicYearId": "{{academicYearId}}",
+  "campusId": "{{campusId}}",
+  "academicPeriodId": "{{periodId}}",
+  "name": null
+}
+
+@timetableId = pegue-aqui-el-id
+
+### 4. Generar (en segundo plano; copie jobId)
+POST {{baseUrl}}/timetables/{{timetableId}}/generate?timeLimitSeconds=180
+
+@jobId = pegue-aqui-el-id
+
+### 5. Estado de la generación (repita hasta que isFinished = true)
+GET {{baseUrl}}/generation-jobs/{{jobId}}
+
+### 6. Cursos (copie un courseId)
+GET {{baseUrl}}/catalog/courses?academicYearId={{academicYearId}}&campusId={{campusId}}
+
+@courseId = pegue-aqui-el-id
+
+### 7a. Horario de un curso
+GET {{baseUrl}}/timetables/{{timetableId}}/lessons?courseId={{courseId}}
+
+### 7b. Horario institucional de un día
+GET {{baseUrl}}/timetables/{{timetableId}}/lessons?day=Wednesday
+
+### 7c. Horario de un docente (ids en /catalog/teachers)
+GET {{baseUrl}}/catalog/teachers
+
+### 8. Publicar
+POST {{baseUrl}}/timetables/{{timetableId}}/publish
