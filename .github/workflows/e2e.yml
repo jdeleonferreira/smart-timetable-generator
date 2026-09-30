@@ -178,20 +178,22 @@ jobs:
       run: |
         set -euo pipefail
         trap 'echo "::error title=Cliente API::Falló (línea $LINENO): $BASH_COMMAND"' ERR
-        if [ ! -f .config/dotnet-tools.json ]; then
+        # El manifiesto de herramientas puede estar en .config/ o en la raíz (según la versión del SDK)
+        if [ ! -f .config/dotnet-tools.json ] && [ ! -f dotnet-tools.json ]; then
           dotnet new tool-manifest
           dotnet tool install Microsoft.OpenApi.Kiota
         fi
+        manifest=$(ls .config/dotnet-tools.json dotnet-tools.json 2>/dev/null | head -1)
         cd src/WebClient
         npm run api:generate 2>&1 | tee kiota-output.txt || { grep -iE "error|fail" kiota-output.txt | head -5 | sed 's/^/::error title=Kiota::/'; exit 1; }
         cd ../..
-        if [ -z "$(git status --porcelain -- src/WebClient/openapi.json src/WebClient/src/api/generated .config)" ]; then
+        if [ -z "$(git status --porcelain -- src/WebClient/openapi.json src/WebClient/src/api/generated "$manifest")" ]; then
           echo "El cliente de la API está al día"
           exit 0
         fi
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git add src/WebClient/openapi.json src/WebClient/src/api/generated .config/dotnet-tools.json
+        git add src/WebClient/openapi.json src/WebClient/src/api/generated "$manifest"
         git commit -m "Cliente de la API regenerado con Kiota"
         git push origin HEAD:"${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
         echo "::notice title=Cliente API::Cliente regenerado y subido a ${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
