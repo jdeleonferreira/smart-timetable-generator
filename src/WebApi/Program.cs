@@ -34,6 +34,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.MapCatalogEndpoints();
+app.MapAreaAndGradeEndpoints();
+app.MapStudyPlanEndpoints();
 app.MapTimetableEndpoints();
 app.UseEventualConsistencyMiddleware();
 

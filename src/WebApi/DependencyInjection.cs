@@ -1,4 +1,5 @@
-﻿using SmartTimetableGenerator.Application.Common.Interfaces;
+﻿using System.Text.Json.Serialization;
+using SmartTimetableGenerator.Application.Common.Interfaces;
 using SmartTimetableGenerator.WebApi.HealthChecks;
 using SmartTimetableGenerator.WebApi.Services;
 
@@ -12,6 +13,9 @@ public static class DependencyInjection
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        // Enums como texto en la API (ej.: "Regular", "CounterShift") en lugar de números
+        services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
         services.AddOpenApi();
 

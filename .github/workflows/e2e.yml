@@ -6,6 +6,8 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: write
@@ -87,6 +89,29 @@ jobs:
         courses=$(curl -sf "$base/catalog/courses?academicYearId=$yearId&campusId=$campusId")
         teachers=$(curl -sf $base/catalog/teachers)
         echo "::notice title=Datos de ejemplo::$(echo "$courses" | jq length) cursos, $(echo "$teachers" | jq length) docentes"
+
+        # Plan de estudios por HTTP: consulta, agregar y quitar una asignatura, errores esperados
+        echo "::notice title=Catálogo::$(curl -sf $base/grades | jq length) grados, $(curl -sf $base/areas | jq length) áreas"
+        planId=$(curl -sf "$base/study-plans?academicYearId=$yearId&campusId=$campusId" | jq -r '.[0].id')
+        plan=$(curl -sf $base/study-plans/$planId)
+        echo "::notice title=Plan de estudios::$(echo "$plan" | jq -c '{name, status, totales: [.grades[] | "\(.shortName)=\(.weeklyTotal)"]}')"
+        [ "$(echo "$plan" | jq -r '.status')" = "Draft" ]
+        gradeId=$(echo "$plan" | jq -r '.grades[0].id')
+        before=$(echo "$plan" | jq '.grades[0].weeklyTotal')
+        freeSubject=$(echo "$plan" | jq -r --arg g "$gradeId" '[.areas[].subjects[] | select(all(.items[]; .gradeId != $g))][0].id')
+        usedSubject=$(echo "$plan" | jq -r --arg g "$gradeId" '[.areas[].subjects[] | select(any(.items[]; .gradeId == $g))][0].id')
+        item='{"gradeId":"'$gradeId'","subjectId":"'$freeSubject'","deliveryMode":"Regular","weeklyHours":1}'
+        added=$(curl -s -o item.json -w '%{http_code}' -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$item")
+        after=$(curl -sf $base/study-plans/$planId | jq '.grades[0].weeklyTotal')
+        removed=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE $base/study-plans/$planId/items/$(jq -r .id item.json))
+        dup='{"gradeId":"'$gradeId'","subjectId":"'$usedSubject'","deliveryMode":"Regular","weeklyHours":1}'
+        duplicate=$(curl -s -o /dev/null -w '%{http_code}' -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$dup")
+        bad='{"gradeId":"'$gradeId'","subjectId":"'$freeSubject'","deliveryMode":"Regular","weeklyHours":99}'
+        invalid=$(curl -s -o /dev/null -w '%{http_code}' -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$bad")
+        final=$(curl -sf $base/study-plans/$planId | jq '.grades[0].weeklyTotal')
+        echo "::notice title=Plan por HTTP::agregar=$added total $before→$after, quitar=$removed total=$final, duplicado=$duplicate, IH inválida=$invalid"
+        [ "$added" = "201" ] && [ "$after" = "$((before + 1))" ] && [ "$removed" = "204" ] && [ "$final" = "$before" ]
+        [ "$duplicate" = "409" ] && [ "$invalid" = "400" ]
 
         timetableId=$(curl -sf -X POST $base/timetables -H 'Content-Type: application/json' \
           -d "{\"academicYearId\":\"$yearId\",\"campusId\":\"$campusId\",\"academicPeriodId\":\"$periodId\",\"name\":null}" | jq -r '.id')
