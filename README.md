@@ -66,6 +66,22 @@ Con la solución corriendo (`dotnet run --project tools/AppHost`), en Scalar o c
 6. `GET /api/timetables/{id}/lessons?courseId=…` (por curso), `?teacherId=…` (por docente) o `?day=Wednesday` (institucional).
 7. `POST /api/timetables/{id}/publish` para publicarlo.
 
+## Gestionar el plan de estudios
+
+El horario se genera a partir del plan de estudios de la sede para el año lectivo. Endpoints (ejemplos en `src/WebApi/WebApi.http`):
+
+- `GET /api/grades`, `GET /api/areas`: catálogo de grados y de áreas con sus asignaturas (se crean y editan con `POST`/`PUT`;
+  las asignaturas no se borran, se desactivan con `isActive: false`).
+- `GET /api/study-plans?academicYearId=…&campusId=…`: planes de estudio.
+- `GET /api/study-plans/{id}`: el plan con la forma del documento: áreas y asignaturas en filas, grados en columnas,
+  la IH de cada asignatura por grado y los totales semanales de cada grado (generales y por periodo).
+- `POST /api/study-plans`: crea el plan de una sede y año, vacío o copiando otro (`copyFromStudyPlanId`, normalmente el del año anterior).
+- `POST /api/study-plans/{id}/items`: agrega una asignatura a un grado con su IH y forma de dictarla
+  (`Regular`, `Transversal` integrada en otra asignatura, o `CounterShift` en otra jornada). `PUT` y `DELETE` sobre
+  `/items/{itemId}` la cambian o la quitan; `/items/{itemId}/distribution` fija el máximo por día, el máximo seguidas
+  y el espacio requerido; `/items/{itemId}/periods/{periodId}` fija una IH distinta en un periodo.
+- `POST /api/study-plans/{id}/approve` y `/reopen`: un plan aprobado no admite cambios hasta que se reabre.
+
 ### Cómo genera
 
 1. **Asignación académica**: respeta las asignaciones manuales; para el resto propone un docente del área de la asignatura,
@@ -77,7 +93,7 @@ Con la solución corriendo (`dotnet run --project tools/AppHost`), en Scalar o c
    clases del docente en otras sedes, clases fijadas y asignaturas en contrajornada. Minimiza huecos en la jornada del curso;
    si algo no cabe, lo deja sin ubicar y lo informa en lugar de fallar.
 
-## Pruebas de la generación (`tests/Scheduling.Tests`)
+## Pruebas de la aplicación (`tests/Scheduling.Tests`)
 
 - **Motor** (`Solver/`): escenarios con resultado conocido (bloques dobles, máximos por día y seguidos, franjas bloqueadas
   y fijadas, carga diaria, sobrecupo con el faltante exacto, casos imposibles, sin huecos) y 24 problemas aleatorios
@@ -86,6 +102,10 @@ Con la solución corriendo (`dotnet run --project tools/AppHost`), en Scalar o c
   sobre un colegio de prueba (`TestSchool`). Cada horario lo revisa `TimetableValidator`: intensidad horaria exacta,
   ningún curso/docente/espacio en dos lugares a la vez (también entre jornadas y sedes), área, carga semanal y diaria del
   docente, disponibilidad, espacios, contrajornada y coherencia con la asignación académica guardada.
+- **Plan de estudios** (`StudyPlans/`): catálogo, creación y copia de planes, cada regla de las asignaturas del plan,
+  totales por grado y periodo, aprobación, y que el horario generado respete los cambios hechos al plan.
+- **Extremo a extremo** (workflow `e2e.yml`): SQL Server real, migración, datos de ejemplo, la API por HTTP
+  (plan de estudios y generación de un horario completo).
 
 ## Licencias de terceros
 
