@@ -92,6 +92,7 @@ jobs:
         for i in $(seq 1 60); do curl -sf http://localhost:5080/health >/dev/null && break; sleep 2; done
         curl -s http://localhost:5080/health | tee health.txt; echo
         echo "::notice title=Health::$(cat health.txt)"
+        curl -sf http://localhost:5080/openapi/v1.json | jq . > src/WebClient/openapi.json
 
         # Sin token: 401. Con token del administrador de ejemplo: todo lo demás.
         unauth=$(curl -s -o /dev/null -w '%{http_code}' $base/study-plans)
@@ -171,6 +172,29 @@ jobs:
 
         status=$(echo "$job" | jq -r '.status')
         [ "$status" = "Succeeded" ] || [ "$status" = "PartiallySucceeded" ]
+
+    - name: Generar el cliente de la API (Kiota) si cambió el contrato
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ ! -f .config/dotnet-tools.json ]; then
+          dotnet new tool-manifest
+          dotnet tool install Microsoft.OpenApi.Kiota
+        fi
+        cd src/WebClient
+        npm run api:generate
+        cd ../..
+        if [ -z "$(git status --porcelain -- src/WebClient/openapi.json src/WebClient/src/api/generated .config)" ]; then
+          echo "El cliente de la API está al día"
+          exit 0
+        fi
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add src/WebClient/openapi.json src/WebClient/src/api/generated .config/dotnet-tools.json
+        git commit -m "Cliente de la API regenerado con Kiota"
+        git pull --rebase origin "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+        git push origin HEAD:"${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+        echo "::notice title=Cliente API::Cliente regenerado y subido a ${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
 
     - name: Reportar fallos
       if: failure()

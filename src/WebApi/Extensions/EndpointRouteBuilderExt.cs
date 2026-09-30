@@ -13,8 +13,8 @@ public static class EndpointRouteBuilderExt
     /// <summary>
     /// Used for POST endpoints that creates a single item.
     /// </summary>
-    public static RouteHandlerBuilder ProducesPost(this RouteHandlerBuilder builder) => builder
-        .Produces(StatusCodes.Status201Created)
+    public static RouteHandlerBuilder ProducesPost<T>(this RouteHandlerBuilder builder) => builder
+        .Produces<T>(StatusCodes.Status201Created)
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status500InternalServerError);
 

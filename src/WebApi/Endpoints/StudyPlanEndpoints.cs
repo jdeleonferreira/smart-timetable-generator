@@ -40,11 +40,11 @@ public static class StudyPlanEndpoints
             .MapPost("/", async (ISender sender, CreateStudyPlanCommand command, CancellationToken ct) =>
             {
                 var result = await sender.Send(command, ct);
-                return result.Match(id => Results.Created($"/api/study-plans/{id}", new { id }), CustomResult.Problem);
+                return result.Match(id => Results.Created($"/api/study-plans/{id}", new CreatedIdDto(id)), CustomResult.Problem);
             })
             .WithName("CreateStudyPlan")
             .WithSummary("Crea el plan de una sede y año lectivo, vacío o copiando otro plan (copyFromStudyPlanId)")
-            .ProducesPost()
+            .ProducesPost<CreatedIdDto>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
@@ -85,12 +85,12 @@ public static class StudyPlanEndpoints
             {
                 var result = await sender.Send(command with { StudyPlanId = studyPlanId }, ct);
                 return result.Match(
-                    id => Results.Created($"/api/study-plans/{studyPlanId}/items/{id}", new { id }),
+                    id => Results.Created($"/api/study-plans/{studyPlanId}/items/{id}", new CreatedIdDto(id)),
                     CustomResult.Problem);
             })
             .WithName("AddStudyPlanItem")
             .WithSummary("Agrega una asignatura a un grado con su IH y forma de dictarla (Regular, Transversal, CounterShift)")
-            .ProducesPost()
+            .ProducesPost<CreatedIdDto>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 

@@ -31,11 +31,11 @@ public static class AreaEndpoints
             .MapPost("/", async (ISender sender, CreateAreaCommand command, CancellationToken ct) =>
             {
                 var result = await sender.Send(command, ct);
-                return result.Match(id => Results.Created($"/api/areas/{id}", new { id }), CustomResult.Problem);
+                return result.Match(id => Results.Created($"/api/areas/{id}", new CreatedIdDto(id)), CustomResult.Problem);
             })
             .WithName("CreateArea")
             .WithSummary("Crea un área de conocimiento")
-            .ProducesPost()
+            .ProducesPost<CreatedIdDto>()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         areas
@@ -53,11 +53,11 @@ public static class AreaEndpoints
             .MapPost("/{areaId:guid}/subjects", async (ISender sender, Guid areaId, AddSubjectCommand command, CancellationToken ct) =>
             {
                 var result = await sender.Send(command with { AreaId = areaId }, ct);
-                return result.Match(id => Results.Created($"/api/areas/{areaId}/subjects/{id}", new { id }), CustomResult.Problem);
+                return result.Match(id => Results.Created($"/api/areas/{areaId}/subjects/{id}", new CreatedIdDto(id)), CustomResult.Problem);
             })
             .WithName("AddSubject")
             .WithSummary("Agrega una asignatura al área")
-            .ProducesPost()
+            .ProducesPost<CreatedIdDto>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
@@ -86,11 +86,11 @@ public static class AreaEndpoints
             .MapPost("/", async (ISender sender, CreateGradeCommand command, CancellationToken ct) =>
             {
                 var result = await sender.Send(command, ct);
-                return result.Match(id => Results.Created($"/api/grades/{id}", new { id }), CustomResult.Problem);
+                return result.Match(id => Results.Created($"/api/grades/{id}", new CreatedIdDto(id)), CustomResult.Problem);
             })
             .WithName("CreateGrade")
             .WithSummary("Agrega un grado (Level: Preschool, Primary, LowerSecondary, UpperSecondary)")
-            .ProducesPost()
+            .ProducesPost<CreatedIdDto>()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         grades
