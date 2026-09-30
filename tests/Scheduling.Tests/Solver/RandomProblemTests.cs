@@ -99,9 +99,9 @@ public class RandomProblemTests
             {
                 for (var k = 0; k < 3; k++)
                 {
-                    var slot = (Day: random.Next(days), Period: random.Next(periods));
-                    if (!usedFixed.Contains(($"t:{t}", slot.Day, slot.Period)))
-                        blocked.Add(new BlockedSlot($"t:{t}", slot.Day, slot.Period));
+                    var (day, period) = (random.Next(days), random.Next(periods));
+                    if (!usedFixed.Contains(($"t:{t}", day, period)))
+                        blocked.Add(new BlockedSlot($"t:{t}", day, period));
                 }
             }
         }
