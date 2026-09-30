@@ -33,7 +33,7 @@ public static class WebApplicationHealthCheckExtensions
             // Check 1: Check the SQL Server Connectivity (no EF, no DBContext, hardly anything to go wrong)
             .AddSqlServer(
                 name: "SQL Server",
-                connectionString: config["ConnectionStrings:DefaultConnection"]!,
+                connectionString: config.GetConnectionString("SmartTimetable")!,
                 healthQuery: $"-- SqlServerHealthCheck{Environment.NewLine}SELECT 123;",
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["db", "sql", "sqlserver"])

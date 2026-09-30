@@ -1,0 +1,126 @@
+name: Prueba de extremo a extremo
+
+# Levanta SQL Server real, aplica la migración, carga los datos de ejemplo con el MigrationService,
+# arranca la API y genera un horario completo. Si no existe la migración inicial, la crea y la sube a la rama.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: "E2e_Password123!"
+        ports:
+          - 1433:1433
+
+    env:
+      ConnectionStrings__SmartTimetable: "Server=localhost,1433;Database=smart-timetable;User ID=sa;Password=E2e_Password123!;TrustServerCertificate=True;MultipleActiveResultSets=True"
+      DOTNET_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Development
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+
+    - name: Build
+      shell: bash
+      run: |
+        set -o pipefail
+        dotnet build src/WebApi --configuration Release 2>&1 | tee build-output.txt
+        dotnet build tools/MigrationService --configuration Release 2>&1 | tee -a build-output.txt
+
+    - name: Crear la migración inicial si no existe
+      shell: bash
+      run: |
+        set -o pipefail
+        if ls src/Infrastructure/Persistence/Migrations/*.cs >/dev/null 2>&1; then
+          echo "La migración ya existe"
+          exit 0
+        fi
+        dotnet tool install --global dotnet-ef --version 10.0.12
+        dotnet ef migrations add Initial --configuration Release --no-build \
+          --project ./src/Infrastructure --startup-project ./src/WebApi \
+          --output-dir ./Persistence/Migrations 2>&1 | tee build-output.txt
+        dotnet build src/WebApi --configuration Release 2>&1 | tee build-output.txt
+        dotnet build tools/MigrationService --configuration Release 2>&1 | tee -a build-output.txt
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add src/Infrastructure/Persistence/Migrations
+        git commit -m "Migración inicial de la base de datos (generada con dotnet ef)"
+        git push origin HEAD:${GITHUB_REF_NAME}
+        echo "::notice title=Migración::Migración inicial creada y subida a ${GITHUB_REF_NAME}"
+
+    - name: Aplicar migración y cargar datos de ejemplo
+      shell: bash
+      run: |
+        set -o pipefail
+        dotnet run --project tools/MigrationService --configuration Release --no-build 2>&1 | tee migration-output.txt
+
+    - name: Arrancar la API y generar un horario
+      shell: bash
+      run: |
+        set -euo pipefail
+        dotnet run --project src/WebApi --configuration Release --no-build --no-launch-profile --urls http://localhost:5080 > api-output.txt 2>&1 &
+        base=http://localhost:5080/api
+        for i in $(seq 1 60); do curl -sf http://localhost:5080/health >/dev/null && break; sleep 2; done
+        curl -s http://localhost:5080/health | tee health.txt; echo
+        echo "::notice title=Health::$(cat health.txt)"
+
+        years=$(curl -sf $base/catalog/academic-years)
+        yearId=$(echo "$years" | jq -r '.[0].id')
+        periodId=$(echo "$years" | jq -r '.[0].periods[0].id')
+        campusId=$(curl -sf $base/catalog/campuses | jq -r '.[0].id')
+        courses=$(curl -sf "$base/catalog/courses?academicYearId=$yearId&campusId=$campusId")
+        teachers=$(curl -sf $base/catalog/teachers)
+        echo "::notice title=Datos de ejemplo::$(echo "$courses" | jq length) cursos, $(echo "$teachers" | jq length) docentes"
+
+        timetableId=$(curl -sf -X POST $base/timetables -H 'Content-Type: application/json' \
+          -d "{\"academicYearId\":\"$yearId\",\"campusId\":\"$campusId\",\"academicPeriodId\":\"$periodId\",\"name\":null}" | jq -r '.id')
+        jobId=$(curl -sf -X POST "$base/timetables/$timetableId/generate?timeLimitSeconds=180" | jq -r '.jobId')
+
+        for i in $(seq 1 60); do
+          job=$(curl -sf $base/generation-jobs/$jobId)
+          [ "$(echo "$job" | jq -r '.isFinished')" = "true" ] && break
+          sleep 5
+        done
+        echo "$job" | jq .
+        echo "::notice title=Generación::$(echo "$job" | jq -c '{status, message}')"
+
+        lessons=$(curl -sf "$base/timetables/$timetableId/lessons")
+        echo "::notice title=Clases ubicadas::$(echo "$lessons" | jq length)"
+        firstCourse=$(echo "$courses" | jq -r '.[0].id')
+        curl -sf "$base/timetables/$timetableId/lessons?courseId=$firstCourse" | jq -c '.[]' | head -40
+        publish=$(curl -s -o /dev/null -w '%{http_code}' -X POST $base/timetables/$timetableId/publish)
+        echo "::notice title=Publicar::HTTP $publish"
+
+        status=$(echo "$job" | jq -r '.status')
+        [ "$status" = "Succeeded" ] || [ "$status" = "PartiallySucceeded" ]
+
+    - name: Reportar fallos
+      if: failure()
+      shell: bash
+      run: |
+        touch build-output.txt migration-output.txt api-output.txt
+        { grep -iE "error" build-output.txt | sort -u | head -15
+          tail -5 build-output.txt
+          grep -iE -A3 "fail|exception|error" migration-output.txt api-output.txt; } \
+          | grep -v "^\s*$" | grep -v "^\s*at " | head -40 > failures.txt || true
+        i=0
+        while IFS= read -r line && [ $i -lt 10 ]; do
+          echo "::error title=Fallo::${line//%/%25}"
+          i=$((i+1))
+        done < failures.txt

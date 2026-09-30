@@ -28,6 +28,11 @@ var sqlServer = builder
         // Use SQL Server 2022 as the default of SQL Server 2025 doesn't work on Linux/MacOS
         container.WithImage("mssql/server:2022-latest");
 
+        // Acepta la licencia (EULA) de SQL Server y usa la edición Developer (gratuita para desarrollo).
+        // Aspire ya lo hace, pero se deja explícito para que el contenedor siempre arranque.
+        container.WithEnvironment("ACCEPT_EULA", "Y");
+        container.WithEnvironment("MSSQL_PID", "Developer");
+
         // If desired, set SQL Server Port to a constant value
         //container.WithHostPort(1800);
     });
