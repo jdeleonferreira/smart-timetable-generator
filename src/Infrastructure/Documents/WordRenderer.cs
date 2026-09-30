@@ -71,9 +71,9 @@ internal static class WordRenderer
                 new PageMargin
                 {
                     Top = Margin,
-                    Right = (UInt32Value)(uint)Margin,
+                    Right = (uint)Margin,
                     Bottom = Margin,
-                    Left = (UInt32Value)(uint)Margin,
+                    Left = (uint)Margin,
                     Header = 360U,
                     Footer = 360U,
                     Gutter = 0U
