@@ -5,7 +5,7 @@
   "kiotaVersion": "1.35.0",
   "clientClassName": "ApiClient",
   "typeAccessModifier": "Public",
-  "clientNamespaceName": "api",
+  "clientNamespaceName": "ApiSdk",
   "language": "TypeScript",
   "usesBackingStore": false,
   "excludeBackwardCompatible": true,

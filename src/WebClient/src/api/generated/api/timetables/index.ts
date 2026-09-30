@@ -13,7 +13,7 @@ import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMeta
  */
 export interface TimetablesRequestBuilder extends BaseRequestBuilder<TimetablesRequestBuilder> {
     /**
-     * Gets an item from the api.api.timetables.item collection
+     * Gets an item from the ApiSdk.api.timetables.item collection
      * @param timetableId Unique identifier of the item
      * @returns {WithTimetableItemRequestBuilder}
      */

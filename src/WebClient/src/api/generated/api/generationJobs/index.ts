@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMeta
  */
 export interface GenerationJobsRequestBuilder extends BaseRequestBuilder<GenerationJobsRequestBuilder> {
     /**
-     * Gets an item from the api.api.generationJobs.item collection
+     * Gets an item from the ApiSdk.api.generationJobs.item collection
      * @param jobId Unique identifier of the item
      * @returns {WithJobItemRequestBuilder}
      */

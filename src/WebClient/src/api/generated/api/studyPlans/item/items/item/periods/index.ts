@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMeta
  */
 export interface PeriodsRequestBuilder extends BaseRequestBuilder<PeriodsRequestBuilder> {
     /**
-     * Gets an item from the api.api.studyPlans.item.items.item.periods.item collection
+     * Gets an item from the ApiSdk.api.studyPlans.item.items.item.periods.item collection
      * @param academicPeriodId Unique identifier of the item
      * @returns {WithAcademicPeriodItemRequestBuilder}
      */

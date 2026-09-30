@@ -13,7 +13,7 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  */
 export interface UsersRequestBuilder extends BaseRequestBuilder<UsersRequestBuilder> {
     /**
-     * Gets an item from the api.api.users.item collection
+     * Gets an item from the ApiSdk.api.users.item collection
      * @param userId Unique identifier of the item
      * @returns {WithUserItemRequestBuilder}
      */

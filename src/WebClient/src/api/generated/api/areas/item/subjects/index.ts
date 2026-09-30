@@ -13,7 +13,7 @@ import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMeta
  */
 export interface SubjectsRequestBuilder extends BaseRequestBuilder<SubjectsRequestBuilder> {
     /**
-     * Gets an item from the api.api.areas.item.subjects.item collection
+     * Gets an item from the ApiSdk.api.areas.item.subjects.item collection
      * @param subjectId Unique identifier of the item
      * @returns {WithSubjectItemRequestBuilder}
      */

@@ -13,7 +13,7 @@ import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMeta
  */
 export interface StudyPlansRequestBuilder extends BaseRequestBuilder<StudyPlansRequestBuilder> {
     /**
-     * Gets an item from the api.api.studyPlans.item collection
+     * Gets an item from the ApiSdk.api.studyPlans.item collection
      * @param studyPlanId Unique identifier of the item
      * @returns {WithStudyPlanItemRequestBuilder}
      */
