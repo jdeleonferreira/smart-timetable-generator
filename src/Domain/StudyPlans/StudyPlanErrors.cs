@@ -46,6 +46,18 @@ public static class StudyPlanErrors
         "StudyPlan.TransversalHasNoHours",
         "Una asignatura transversal no tiene intensidad horaria");
 
+    public static readonly Error ShiftNotInCampus = Error.Validation(
+        "StudyPlan.ShiftNotInCampus",
+        "La jornada de contrajornada no pertenece a la sede del plan");
+
+    public static readonly Error SubjectInactive = Error.Validation(
+        "StudyPlan.SubjectInactive",
+        "La asignatura está desactivada; actívela para agregarla al plan");
+
+    public static readonly Error PeriodNotInYear = Error.Validation(
+        "StudyPlan.PeriodNotInYear",
+        "El periodo no pertenece al año lectivo del plan");
+
     public static readonly Error InvalidDistribution = Error.Validation(
         "StudyPlan.InvalidDistribution",
         "La distribución no es válida: los máximos deben ser positivos y las horas seguidas no pueden superar las horas por día");

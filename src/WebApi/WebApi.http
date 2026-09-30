@@ -47,3 +47,83 @@ GET {{baseUrl}}/catalog/teachers
 
 ### 8. Publicar
 POST {{baseUrl}}/timetables/{{timetableId}}/publish
+
+### ===================== Plan de estudios =====================
+
+### Catálogo: grados y áreas con sus asignaturas (copie gradeId y subjectId)
+GET {{baseUrl}}/grades
+
+###
+GET {{baseUrl}}/areas
+
+### Planes de estudio del año y sede (copie el id)
+GET {{baseUrl}}/study-plans?academicYearId={{academicYearId}}&campusId={{campusId}}
+
+@studyPlanId = pegue-aqui-el-id
+
+### Plan completo: áreas/asignaturas × grados, IH y totales por grado y periodo
+GET {{baseUrl}}/study-plans/{{studyPlanId}}
+
+### Crear el plan de otro año copiando uno existente (sin copyFromStudyPlanId se crea vacío)
+POST {{baseUrl}}/study-plans
+Content-Type: application/json
+
+{
+  "academicYearId": "id-del-otro-año",
+  "campusId": "{{campusId}}",
+  "name": null,
+  "copyFromStudyPlanId": "{{studyPlanId}}"
+}
+
+@gradeId = pegue-aqui-el-id
+@subjectId = pegue-aqui-el-id
+
+### Agregar una asignatura a un grado (deliveryMode: Regular, Transversal o CounterShift)
+POST {{baseUrl}}/study-plans/{{studyPlanId}}/items
+Content-Type: application/json
+
+{
+  "gradeId": "{{gradeId}}",
+  "subjectId": "{{subjectId}}",
+  "deliveryMode": "Regular",
+  "weeklyHours": 2,
+  "note": null
+}
+
+@itemId = pegue-aqui-el-id
+
+### Cambiar la IH o la forma de dictarla
+PUT {{baseUrl}}/study-plans/{{studyPlanId}}/items/{{itemId}}
+Content-Type: application/json
+
+{
+  "deliveryMode": "Regular",
+  "weeklyHours": 3
+}
+
+### Distribución: máximo por día, máximo seguidas (2 = bloques dobles) y espacio (ej.: ComputerLab)
+PUT {{baseUrl}}/study-plans/{{studyPlanId}}/items/{{itemId}}/distribution
+Content-Type: application/json
+
+{
+  "maxHoursPerDay": 2,
+  "maxConsecutiveHours": 2,
+  "requiredSpaceType": null
+}
+
+### IH distinta en un periodo (null = vuelve a la IH general)
+PUT {{baseUrl}}/study-plans/{{studyPlanId}}/items/{{itemId}}/periods/{{periodId}}
+Content-Type: application/json
+
+{
+  "weeklyHours": 4
+}
+
+### Quitar la asignatura del grado
+DELETE {{baseUrl}}/study-plans/{{studyPlanId}}/items/{{itemId}}
+
+### Aprobar (queda cerrado a cambios) y reabrir
+POST {{baseUrl}}/study-plans/{{studyPlanId}}/approve
+
+###
+POST {{baseUrl}}/study-plans/{{studyPlanId}}/reopen
