@@ -43,12 +43,12 @@ public class ApplicationDbContext(DbContextOptions options)
     public DbSet<GenerationJob> GenerationJobs => AggregateRootSet<GenerationJob>();
     public DbSet<TrainingProject> TrainingProjects => AggregateRootSet<TrainingProject>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
         // Primero Identity, luego las configuraciones propias (incluida la de ApplicationUser)
-        base.OnModelCreating(modelBuilder);
+        base.OnModelCreating(builder);
 
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
