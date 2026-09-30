@@ -26,6 +26,7 @@ export interface GridLesson {
   courseName: string;
   subjectName: string;
   subjectCode?: string | null;
+  teacherId?: string | null;
   teacherName?: string | null;
   spaceName?: string | null;
 }
@@ -114,7 +115,7 @@ function toMinutes(value?: string): number {
 }
 
 /** Color estable por asignatura, para distinguirlas en la cuadrícula. */
-const PALETTE = ['blue', 'teal', 'grape', 'orange', 'cyan', 'pink', 'lime', 'indigo', 'yellow', 'red', 'green', 'violet'];
+const PALETTE = ['blue', 'orange', 'grape', 'teal', 'pink', 'lime', 'indigo', 'yellow', 'red', 'green', 'violet'];
 
 export function subjectColor(subjectName: string): string {
   let hash = 0;

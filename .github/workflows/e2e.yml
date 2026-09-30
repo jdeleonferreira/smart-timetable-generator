@@ -198,11 +198,45 @@ jobs:
         git push origin HEAD:"${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
         echo "::notice title=Cliente API::Cliente regenerado y subido a ${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
 
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: src/WebClient/package-lock.json
+
+    - name: Cliente web contra la API real (Playwright)
+      shell: bash
+      working-directory: src/WebClient
+      env:
+        API_URL: http://localhost:5080
+        E2E_BASE_URL: http://localhost:4173
+      run: |
+        set -o pipefail
+        npm ci
+        npx playwright install --with-deps chromium
+        npm run build
+        npx vite preview --port 4173 --strictPort > ../../web-preview.txt 2>&1 &
+        for i in $(seq 1 30); do curl -sf http://localhost:4173 >/dev/null && break; sleep 1; done
+        npx playwright test --project=real 2>&1 | tee ../../playwright-output.txt
+        echo "::notice title=Playwright::$(grep -E '[0-9]+ (passed|failed)' ../../playwright-output.txt | tr -s ' ' | paste -sd' ')"
+
+    - name: Capturas del cliente web
+      if: success() || failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: web-real
+        path: |
+          src/WebClient/playwright-report
+          src/WebClient/test-results
+        if-no-files-found: ignore
+
     - name: Reportar fallos
       if: failure()
       shell: bash
       run: |
-        touch build-output.txt migration-output.txt api-output.txt
+        touch build-output.txt migration-output.txt api-output.txt playwright-output.txt
+        grep -E "✘|Error:|expect\(|Received|Expected" playwright-output.txt | head -12 | while IFS= read -r l; do echo "::error title=Playwright::${l//%/%25}"; done
         { grep -iE "error" build-output.txt | sort -u | head -15
           tail -5 build-output.txt
           grep -iE -A3 "fail|exception|error" migration-output.txt api-output.txt; } \

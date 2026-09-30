@@ -12,13 +12,14 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "api:openapi": "node scripts/download-openapi.mjs",
-    "api:generate": "dotnet tool restore && dotnet kiota generate --language typescript --openapi openapi.json --class-name ApiClient --namespace-name api --output src/api/generated --clean-output --exclude-backward-compatible"
+    "api:generate": "dotnet tool restore && dotnet kiota generate --language typescript --openapi openapi.json --class-name ApiClient --output src/api/generated --clean-output --exclude-backward-compatible"
   },
   "dependencies": {
     "@mantine/core": "^9.6.3",
     "@mantine/hooks": "^9.6.3",
     "@mantine/modals": "^9.6.3",
     "@mantine/notifications": "^9.6.3",
+    "@microsoft/kiota-abstractions": "^1.0.0-preview.109",
     "@microsoft/kiota-bundle": "^1.0.0-preview.109",
     "@tabler/icons-react": "^3.48.0",
     "@tanstack/react-query": "^5.104.0",
