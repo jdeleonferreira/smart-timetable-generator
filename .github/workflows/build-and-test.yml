@@ -32,7 +32,29 @@ jobs:
       run: dotnet build --no-restore --configuration Release
 
     - name: Test
-      run: dotnet test --no-build --no-restore --configuration Release -- --report-xunit-trx
+      shell: bash
+      run: |
+        set -o pipefail
+        dotnet test --no-build --no-restore --configuration Release -- --report-xunit-trx 2>&1 | tee test-output.txt
+
+    - name: Report test failures
+      if: failure()
+      shell: bash
+      run: |
+        # Publica las líneas relevantes como anotaciones (visibles en el resumen de la ejecución)
+        grep -E "failed|Failed|error|Error|zero tests|Zero tests|exit code|Assert|Expected|Esperado" test-output.txt \
+          | grep -v "^\s*$" | head -40 > failures.txt || true
+        {
+          echo "## Pruebas con fallos"
+          echo '```'
+          cat failures.txt
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+        i=0
+        while IFS= read -r line && [ $i -lt 10 ]; do
+          echo "::error title=Prueba::${line//%/%25}"
+          i=$((i+1))
+        done < failures.txt
 
     - name: Publish
       run: dotnet publish src/WebApi/WebApi.csproj --no-build --no-restore --configuration Release --output ./publish
