@@ -46,6 +46,15 @@ internal sealed class CreateSpaceCommandValidator : AbstractValidator<CreateSpac
 }
 ```
 
+## Authorization
+
+- Every command (except `LoginCommand`) must have `[Authorize]` (`Application/Common/Security`); an architecture test enforces it.
+  Use `Roles = Roles.Admin` for institutional catalogs and users, `Roles = Roles.Managers` for study plans and timetables.
+- Requests with `[Authorize]` must return `ErrorOr<T>` (the `AuthorizationBehaviour` answers 401/403 with errors).
+- Campus scope: after loading the resource, `if (currentUser.EnsureCanManageCampus(x.CampusId) is { } forbidden) return forbidden;`
+- Teachers only see published timetables (`currentUser.CanSeeDrafts()`).
+- In tests, `SchedulingTestHost.SignInAs(role, campusId, teacherId)` switches the user (default: Admin).
+
 ## Queries (Read)
 
 Location: `src/Application/UseCases/{Feature}/Queries/{QueryName}/`
