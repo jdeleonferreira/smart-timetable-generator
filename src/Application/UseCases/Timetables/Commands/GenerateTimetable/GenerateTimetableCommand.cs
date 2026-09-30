@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.TimetableGeneration;
 using SmartTimetableGenerator.Domain.Timetables;
 
@@ -8,6 +9,7 @@ namespace SmartTimetableGenerator.Application.UseCases.Timetables.Commands.Gener
 /// <summary>
 /// Pone en cola la generación de un horario. Devuelve el id de la solicitud para consultar su estado.
 /// </summary>
+[Authorize(Roles = Roles.Managers)]
 public sealed record GenerateTimetableCommand(int TimeLimitSeconds = GenerateTimetableCommand.DefaultTimeLimitSeconds) : IRequest<ErrorOr<Guid>>
 {
     /// <summary>
@@ -34,6 +36,9 @@ internal sealed class GenerateTimetableCommandHandler(
             .FirstOrDefaultAsync(t => t.Id == timetableId, cancellationToken);
         if (timetable is null)
             return TimetableErrors.NotFound;
+
+        if (currentUser.EnsureCanManageCampus(timetable.CampusId) is { } forbidden)
+            return forbidden;
 
         if (timetable.Status != TimetableStatus.Draft)
             return TimetableErrors.NotEditable;

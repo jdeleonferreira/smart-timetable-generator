@@ -14,6 +14,8 @@
     
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer"/>
     <PackageReference Include="EntityFrameworkCore.Exceptions.SqlServer" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Google.OrTools" />
     <!-- TODO: Remove when Aspire updates KubernetesClient dependency to fix https://github.com/advisories/GHSA-w7r3-mgwf-4mqq -->
     <PackageReference Include="KubernetesClient" />

@@ -1,4 +1,5 @@
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.Grades;
 
 namespace SmartTimetableGenerator.Application.UseCases.Grades.Commands.CreateGrade;
@@ -6,6 +7,7 @@ namespace SmartTimetableGenerator.Application.UseCases.Grades.Commands.CreateGra
 /// <summary>
 /// Agrega un grado al catálogo institucional.
 /// </summary>
+[Authorize(Roles = Roles.Admin)]
 public sealed record CreateGradeCommand(string Name, string ShortName, EducationLevel Level, int Order) : IRequest<ErrorOr<Guid>>;
 
 internal sealed class CreateGradeCommandHandler(IApplicationDbContext dbContext)

@@ -30,6 +30,10 @@ public class Worker(
                 await initializer.SeedDataAsync(stoppingToken);
             }
 
+            // Roles y primer administrador (y usuarios de ejemplo en Development)
+            await scope.ServiceProvider.GetRequiredService<IdentityInitializer>()
+                .SeedAsync(environment.IsDevelopment(), stoppingToken);
+
             sw.Stop();
             logger.LogInformation("DB creation and seeding took {ElapsedTime}", sw.Elapsed);
         }

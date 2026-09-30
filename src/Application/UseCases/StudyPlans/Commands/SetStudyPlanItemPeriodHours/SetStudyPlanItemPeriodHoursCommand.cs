@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Application.UseCases.StudyPlans.Common;
 using SmartTimetableGenerator.Domain.AcademicYears;
 using SmartTimetableGenerator.Domain.StudyPlans;
@@ -10,6 +11,7 @@ namespace SmartTimetableGenerator.Application.UseCases.StudyPlans.Commands.SetSt
 /// Fija una IH semanal distinta para un periodo académico. WeeklyHours = null quita el ajuste
 /// y el periodo vuelve a la IH general de la asignatura.
 /// </summary>
+[Authorize(Roles = Roles.Managers)]
 public sealed record SetStudyPlanItemPeriodHoursCommand(int? WeeklyHours) : IRequest<ErrorOr<Success>>
 {
     [JsonIgnore]
@@ -22,7 +24,7 @@ public sealed record SetStudyPlanItemPeriodHoursCommand(int? WeeklyHours) : IReq
     public Guid AcademicPeriodId { get; set; }
 }
 
-internal sealed class SetStudyPlanItemPeriodHoursCommandHandler(IApplicationDbContext dbContext)
+internal sealed class SetStudyPlanItemPeriodHoursCommandHandler(IApplicationDbContext dbContext, ICurrentUserService currentUser)
     : IRequestHandler<SetStudyPlanItemPeriodHoursCommand, ErrorOr<Success>>
 {
     public async Task<ErrorOr<Success>> Handle(SetStudyPlanItemPeriodHoursCommand request, CancellationToken cancellationToken)
@@ -30,6 +32,9 @@ internal sealed class SetStudyPlanItemPeriodHoursCommandHandler(IApplicationDbCo
         var plan = await StudyPlanReferences.LoadPlanAsync(dbContext, request.StudyPlanId, cancellationToken);
         if (plan is null)
             return StudyPlanErrors.NotFound;
+
+        if (currentUser.EnsureCanManageCampus(plan.CampusId) is { } forbidden)
+            return forbidden;
 
         var periodId = AcademicPeriodId.From(request.AcademicPeriodId);
         var year = await dbContext.AcademicYears

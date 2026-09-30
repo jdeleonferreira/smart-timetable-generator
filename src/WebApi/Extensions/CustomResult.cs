@@ -27,6 +27,8 @@ public static class CustomResult
             ErrorType.Conflict => StatusCodes.Status409Conflict,
             ErrorType.Validation => StatusCodes.Status400BadRequest,
             ErrorType.NotFound => StatusCodes.Status404NotFound,
+            ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
             _ => StatusCodes.Status500InternalServerError
         };
 
@@ -44,6 +46,6 @@ public static class CustomResult
                 validationErrors.Add(e.Code, [e.Description]);
         }
 
-        return TypedResults.ValidationProblem(validationErrors, title: "One or more validation errors occurred.");
+        return TypedResults.ValidationProblem(validationErrors, title: "Los datos enviados no son válidos.");
     }
 }

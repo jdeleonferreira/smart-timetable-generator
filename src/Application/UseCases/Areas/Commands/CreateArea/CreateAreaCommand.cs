@@ -1,4 +1,5 @@
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.Areas;
 
 namespace SmartTimetableGenerator.Application.UseCases.Areas.Commands.CreateArea;
@@ -6,6 +7,7 @@ namespace SmartTimetableGenerator.Application.UseCases.Areas.Commands.CreateArea
 /// <summary>
 /// Crea un área de conocimiento. Sin orden, queda de última.
 /// </summary>
+[Authorize(Roles = Roles.Admin)]
 public sealed record CreateAreaCommand(string Name, int? Order = null) : IRequest<ErrorOr<Guid>>;
 
 internal sealed class CreateAreaCommandHandler(IApplicationDbContext dbContext)

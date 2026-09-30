@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.Grades;
 
 namespace SmartTimetableGenerator.Application.UseCases.Grades.Commands.UpdateGrade;
@@ -7,6 +8,7 @@ namespace SmartTimetableGenerator.Application.UseCases.Grades.Commands.UpdateGra
 /// <summary>
 /// Cambia el nombre, nombre corto, nivel u orden de un grado.
 /// </summary>
+[Authorize(Roles = Roles.Admin)]
 public sealed record UpdateGradeCommand(string Name, string ShortName, EducationLevel Level, int Order) : IRequest<ErrorOr<Success>>
 {
     [JsonIgnore]

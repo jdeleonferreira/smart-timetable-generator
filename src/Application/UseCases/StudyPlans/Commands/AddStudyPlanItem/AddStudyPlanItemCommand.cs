@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Application.UseCases.StudyPlans.Common;
 using SmartTimetableGenerator.Domain.Areas;
 using SmartTimetableGenerator.Domain.Campuses;
@@ -13,6 +14,7 @@ namespace SmartTimetableGenerator.Application.UseCases.StudyPlans.Commands.AddSt
 /// regular (en la jornada del curso), transversal (sin horas, integrada en otra asignatura)
 /// o en contrajornada (en otra jornada de la sede).
 /// </summary>
+[Authorize(Roles = Roles.Managers)]
 public sealed record AddStudyPlanItemCommand(
     Guid GradeId,
     Guid SubjectId,
@@ -26,7 +28,7 @@ public sealed record AddStudyPlanItemCommand(
     public Guid StudyPlanId { get; set; }
 }
 
-internal sealed class AddStudyPlanItemCommandHandler(IApplicationDbContext dbContext)
+internal sealed class AddStudyPlanItemCommandHandler(IApplicationDbContext dbContext, ICurrentUserService currentUser)
     : IRequestHandler<AddStudyPlanItemCommand, ErrorOr<Guid>>
 {
     public async Task<ErrorOr<Guid>> Handle(AddStudyPlanItemCommand request, CancellationToken cancellationToken)
@@ -34,6 +36,9 @@ internal sealed class AddStudyPlanItemCommandHandler(IApplicationDbContext dbCon
         var plan = await StudyPlanReferences.LoadPlanAsync(dbContext, request.StudyPlanId, cancellationToken);
         if (plan is null)
             return StudyPlanErrors.NotFound;
+
+        if (currentUser.EnsureCanManageCampus(plan.CampusId) is { } forbidden)
+            return forbidden;
 
         var gradeId = GradeId.From(request.GradeId);
         var subjectId = SubjectId.From(request.SubjectId);

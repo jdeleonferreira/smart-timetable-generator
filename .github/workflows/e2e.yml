@@ -31,9 +31,14 @@ jobs:
       ConnectionStrings__SmartTimetable: "Server=localhost,1433;Database=smart-timetable;User ID=sa;Password=E2e_Password123!;TrustServerCertificate=True;MultipleActiveResultSets=True"
       DOTNET_ENVIRONMENT: Development
       ASPNETCORE_ENVIRONMENT: Development
+      Jwt__SigningKey: "llave-de-la-prueba-e2e-con-mas-de-32-caracteres"
+      InitialAdmin__Email: "admin@colegio.local"
+      InitialAdmin__Password: "Admin2026"
 
     steps:
     - uses: actions/checkout@v7
+      with:
+        ref: ${{ github.head_ref || github.ref }}
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v6
@@ -45,26 +50,32 @@ jobs:
         dotnet build src/WebApi --configuration Release 2>&1 | tee build-output.txt
         dotnet build tools/MigrationService --configuration Release 2>&1 | tee -a build-output.txt
 
-    - name: Crear la migración inicial si no existe
+    - name: Crear la migración si el modelo cambió
       shell: bash
       run: |
         set -o pipefail
-        if ls src/Infrastructure/Persistence/Migrations/*.cs >/dev/null 2>&1; then
-          echo "La migración ya existe"
-          exit 0
-        fi
         dotnet tool install --global dotnet-ef --version 10.0.12
-        dotnet ef migrations add Initial --configuration Release --no-build \
-          --project ./src/Infrastructure --startup-project ./src/WebApi \
-          --output-dir ./Persistence/Migrations 2>&1 | tee build-output.txt
+        ef="dotnet ef --configuration Release --no-build --project ./src/Infrastructure --startup-project ./src/WebApi"
+        if ls src/Infrastructure/Persistence/Migrations/*.cs >/dev/null 2>&1; then
+          if $ef migrations has-pending-model-changes 2>&1 | tee build-output.txt; then
+            echo "La base de datos está al día con el modelo"
+            exit 0
+          fi
+          # Nombre a partir de la rama: feature/autenticacion -> Autenticacion
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          name=$(echo "${branch##*/}" | sed -E 's/[^A-Za-z0-9]+/ /g; s/\b(.)/\u\1/g; s/ //g')
+        else
+          name=Initial
+        fi
+        $ef migrations add "$name" --output-dir ./Persistence/Migrations 2>&1 | tee build-output.txt
         dotnet build src/WebApi --configuration Release 2>&1 | tee build-output.txt
         dotnet build tools/MigrationService --configuration Release 2>&1 | tee -a build-output.txt
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git add src/Infrastructure/Persistence/Migrations
-        git commit -m "Migración inicial de la base de datos (generada con dotnet ef)"
-        git push origin HEAD:${GITHUB_REF_NAME}
-        echo "::notice title=Migración::Migración inicial creada y subida a ${GITHUB_REF_NAME}"
+        git commit -m "Migración $name (generada con dotnet ef)"
+        git push origin HEAD:"${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+        echo "::notice title=Migración::Migración $name creada y subida a ${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
 
     - name: Aplicar migración y cargar datos de ejemplo
       shell: bash
@@ -82,18 +93,28 @@ jobs:
         curl -s http://localhost:5080/health | tee health.txt; echo
         echo "::notice title=Health::$(cat health.txt)"
 
-        years=$(curl -sf $base/catalog/academic-years)
+        # Sin token: 401. Con token del administrador de ejemplo: todo lo demás.
+        unauth=$(curl -s -o /dev/null -w '%{http_code}' $base/study-plans)
+        login() { curl -sf -X POST $base/auth/login -H 'Content-Type: application/json' -d "{\"email\":\"$1\",\"password\":\"$2\"}" | jq -r .accessToken; }
+        token=$(login admin@colegio.local Admin2026)
+        api() { curl -sf -H "Authorization: Bearer $token" "$@"; }
+        status() { curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" "$@"; }
+        me=$(api $base/auth/me | jq -c '{email, role}')
+        echo "::notice title=Sesión::sin token=$unauth, admin=$me"
+        [ "$unauth" = "401" ] && [ "$(echo "$me" | jq -r .role)" = "Admin" ]
+
+        years=$(api $base/catalog/academic-years)
         yearId=$(echo "$years" | jq -r '.[0].id')
         periodId=$(echo "$years" | jq -r '.[0].periods[0].id')
-        campusId=$(curl -sf $base/catalog/campuses | jq -r '.[0].id')
-        courses=$(curl -sf "$base/catalog/courses?academicYearId=$yearId&campusId=$campusId")
-        teachers=$(curl -sf $base/catalog/teachers)
+        campusId=$(api $base/catalog/campuses | jq -r '.[0].id')
+        courses=$(api "$base/catalog/courses?academicYearId=$yearId&campusId=$campusId")
+        teachers=$(api $base/catalog/teachers)
         echo "::notice title=Datos de ejemplo::$(echo "$courses" | jq length) cursos, $(echo "$teachers" | jq length) docentes"
 
         # Plan de estudios por HTTP: consulta, agregar y quitar una asignatura, errores esperados
-        echo "::notice title=Catálogo::$(curl -sf $base/grades | jq length) grados, $(curl -sf $base/areas | jq length) áreas"
-        planId=$(curl -sf "$base/study-plans?academicYearId=$yearId&campusId=$campusId" | jq -r '.[0].id')
-        plan=$(curl -sf $base/study-plans/$planId)
+        echo "::notice title=Catálogo::$(api $base/grades | jq length) grados, $(api $base/areas | jq length) áreas"
+        planId=$(api "$base/study-plans?academicYearId=$yearId&campusId=$campusId" | jq -r '.[0].id')
+        plan=$(api $base/study-plans/$planId)
         echo "::notice title=Plan de estudios::$(echo "$plan" | jq -c '{name, status, totales: [.grades[] | "\(.shortName)=\(.weeklyTotal)"]}')"
         [ "$(echo "$plan" | jq -r '.status')" = "Draft" ]
         gradeId=$(echo "$plan" | jq -r '.grades[0].id')
@@ -101,35 +122,51 @@ jobs:
         freeSubject=$(echo "$plan" | jq -r --arg g "$gradeId" '[.areas[].subjects[] | select(all(.items[]; .gradeId != $g))][0].id')
         usedSubject=$(echo "$plan" | jq -r --arg g "$gradeId" '[.areas[].subjects[] | select(any(.items[]; .gradeId == $g))][0].id')
         item='{"gradeId":"'$gradeId'","subjectId":"'$freeSubject'","deliveryMode":"Regular","weeklyHours":1}'
-        added=$(curl -s -o item.json -w '%{http_code}' -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$item")
-        after=$(curl -sf $base/study-plans/$planId | jq '.grades[0].weeklyTotal')
-        removed=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE $base/study-plans/$planId/items/$(jq -r .id item.json))
+        added=$(curl -s -o item.json -w '%{http_code}' -H "Authorization: Bearer $token" -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$item")
+        after=$(api $base/study-plans/$planId | jq '.grades[0].weeklyTotal')
+        removed=$(status -X DELETE $base/study-plans/$planId/items/$(jq -r .id item.json))
         dup='{"gradeId":"'$gradeId'","subjectId":"'$usedSubject'","deliveryMode":"Regular","weeklyHours":1}'
-        duplicate=$(curl -s -o /dev/null -w '%{http_code}' -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$dup")
+        duplicate=$(status -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$dup")
         bad='{"gradeId":"'$gradeId'","subjectId":"'$freeSubject'","deliveryMode":"Regular","weeklyHours":99}'
-        invalid=$(curl -s -o /dev/null -w '%{http_code}' -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$bad")
-        final=$(curl -sf $base/study-plans/$planId | jq '.grades[0].weeklyTotal')
+        invalid=$(status -X POST $base/study-plans/$planId/items -H 'Content-Type: application/json' -d "$bad")
+        final=$(api $base/study-plans/$planId | jq '.grades[0].weeklyTotal')
         echo "::notice title=Plan por HTTP::agregar=$added total $before→$after, quitar=$removed total=$final, duplicado=$duplicate, IH inválida=$invalid"
         [ "$added" = "201" ] && [ "$after" = "$((before + 1))" ] && [ "$removed" = "204" ] && [ "$final" = "$before" ]
         [ "$duplicate" = "409" ] && [ "$invalid" = "400" ]
 
-        timetableId=$(curl -sf -X POST $base/timetables -H 'Content-Type: application/json' \
+        timetableId=$(api -X POST $base/timetables -H 'Content-Type: application/json' \
           -d "{\"academicYearId\":\"$yearId\",\"campusId\":\"$campusId\",\"academicPeriodId\":\"$periodId\",\"name\":null}" | jq -r '.id')
-        jobId=$(curl -sf -X POST "$base/timetables/$timetableId/generate?timeLimitSeconds=180" | jq -r '.jobId')
+        jobId=$(api -X POST "$base/timetables/$timetableId/generate?timeLimitSeconds=180" | jq -r '.jobId')
 
         for i in $(seq 1 60); do
-          job=$(curl -sf $base/generation-jobs/$jobId)
+          job=$(api $base/generation-jobs/$jobId)
           [ "$(echo "$job" | jq -r '.isFinished')" = "true" ] && break
           sleep 5
         done
         echo "$job" | jq .
         echo "::notice title=Generación::$(echo "$job" | jq -c '{status, message}')"
 
-        lessons=$(curl -sf "$base/timetables/$timetableId/lessons")
+        lessons=$(api "$base/timetables/$timetableId/lessons")
         echo "::notice title=Clases ubicadas::$(echo "$lessons" | jq length)"
         firstCourse=$(echo "$courses" | jq -r '.[0].id')
-        curl -sf "$base/timetables/$timetableId/lessons?courseId=$firstCourse" | jq -c '.[]' | head -40
-        publish=$(curl -s -o /dev/null -w '%{http_code}' -X POST $base/timetables/$timetableId/publish)
+        api "$base/timetables/$timetableId/lessons?courseId=$firstCourse" | jq -c '.[]' | head -40
+        # Docente: ve el plan, no ve el borrador y no puede generar ni publicar
+        adminToken=$token
+        token=$(login docente@colegio.local Docente2026)
+        teacherPlan=$(status $base/study-plans/$planId)
+        teacherDraft=$(status "$base/timetables/$timetableId/lessons")
+        teacherGenerate=$(status -X POST "$base/timetables/$timetableId/generate")
+        teacherUsers=$(status $base/users)
+        # Coordinador de la sede: puede editar el plan de su sede
+        token=$(login coordinador@colegio.local Coordinador2026)
+        coordinatorPlan=$(status -X PUT $base/study-plans/$planId -H 'Content-Type: application/json' -d "$(echo "$plan" | jq -c '{name, notes}')")
+        coordinatorUsers=$(status $base/users)
+        token=$adminToken
+        echo "::notice title=Permisos::docente: plan=$teacherPlan borrador=$teacherDraft generar=$teacherGenerate usuarios=$teacherUsers; coordinador: editar plan=$coordinatorPlan usuarios=$coordinatorUsers"
+        [ "$teacherPlan" = "200" ] && [ "$teacherDraft" = "404" ] && [ "$teacherGenerate" = "403" ] && [ "$teacherUsers" = "403" ]
+        [ "$coordinatorPlan" = "204" ] && [ "$coordinatorUsers" = "403" ]
+
+        publish=$(status -X POST $base/timetables/$timetableId/publish)
         echo "::notice title=Publicar::HTTP $publish"
 
         status=$(echo "$job" | jq -r '.status')

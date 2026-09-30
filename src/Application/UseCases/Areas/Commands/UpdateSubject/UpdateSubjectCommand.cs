@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.Areas;
 
 namespace SmartTimetableGenerator.Application.UseCases.Areas.Commands.UpdateSubject;
@@ -8,6 +9,7 @@ namespace SmartTimetableGenerator.Application.UseCases.Areas.Commands.UpdateSubj
 /// Cambia el nombre, abreviatura, orden o estado (activa/inactiva) de una asignatura.
 /// Las asignaturas no se eliminan porque pueden estar en planes de años anteriores; se desactivan.
 /// </summary>
+[Authorize(Roles = Roles.Admin)]
 public sealed record UpdateSubjectCommand(string Name, string? Code, int Order, bool IsActive = true) : IRequest<ErrorOr<Success>>
 {
     [JsonIgnore]

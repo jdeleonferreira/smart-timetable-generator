@@ -53,10 +53,39 @@ dos cursos por grado con su salón, docentes ficticios por área y los proyectos
 
 La documentación de la API queda en `https://localhost:7255/scalar/v1`.
 
+## Usuarios y permisos
+
+Todos los endpoints piden sesión salvo `POST /api/auth/login`, que devuelve un token para enviar en
+`Authorization: Bearer …` (en Scalar, péguelo en *Authentication*). El token dura 8 horas.
+
+| Rol | Puede |
+|---|---|
+| **Admin** | Todo: catálogos (grados, áreas, asignaturas), usuarios, planes y horarios de todas las sedes |
+| **Coordinador** | Plan de estudios y horarios (crear, generar, publicar) de **su** sede; consultar lo demás |
+| **Docente** | Consultar el plan de estudios y los horarios **publicados** |
+
+En Development se crean estos usuarios de ejemplo:
+
+| Correo | Contraseña | Rol |
+|---|---|---|
+| `admin@colegio.local` | `Admin2026` | Admin |
+| `coordinador@colegio.local` | `Coordinador2026` | Coordinador de la Sede Principal |
+| `docente@colegio.local` | `Docente2026` | Docente (vinculado al primer docente) |
+
+El administrador crea los demás en `/api/users`. Cambiar la contraseña, el rol o la sede de un usuario, o
+desactivarlo, cierra sus sesiones. Tras 5 intentos fallidos la cuenta se bloquea 5 minutos (el administrador puede
+fijarle una contraseña nueva y desbloquearla).
+
+**Fuera de Development** configure, como secreto o variable de entorno:
+
+- `Jwt__SigningKey` en la API: llave de al menos 32 caracteres.
+- `InitialAdmin__Email` e `InitialAdmin__Password` en el MigrationService: el primer administrador.
+
 ## Generar un horario de prueba
 
 Con la solución corriendo (`dotnet run --project tools/AppHost`), en Scalar o con `src/WebApi/WebApi.http`:
 
+0. `POST /api/auth/login` con `admin@colegio.local` / `Admin2026` y use el token en las demás peticiones.
 1. `GET /api/catalog/academic-years` → copie el id del año 2026 y del **Periodo 1**.
 2. `GET /api/catalog/campuses` → copie el id de la **Sede Principal**.
 3. `POST /api/timetables` con `{ "academicYearId", "campusId", "academicPeriodId" }` → devuelve el id del horario.
@@ -102,10 +131,12 @@ El horario se genera a partir del plan de estudios de la sede para el año lecti
   sobre un colegio de prueba (`TestSchool`). Cada horario lo revisa `TimetableValidator`: intensidad horaria exacta,
   ningún curso/docente/espacio en dos lugares a la vez (también entre jornadas y sedes), área, carga semanal y diaria del
   docente, disponibilidad, espacios, contrajornada y coherencia con la asignación académica guardada.
+- **Seguridad** (`Security/`): permisos por rol y sede para cada comando, docentes solo con horarios publicados,
+  y usuarios con ASP.NET Identity real (reglas por rol, token JWT, bloqueo, contraseñas, último administrador).
 - **Plan de estudios** (`StudyPlans/`): catálogo, creación y copia de planes, cada regla de las asignaturas del plan,
   totales por grado y periodo, aprobación, y que el horario generado respete los cambios hechos al plan.
 - **Extremo a extremo** (workflow `e2e.yml`): SQL Server real, migración, datos de ejemplo, la API por HTTP
-  (plan de estudios y generación de un horario completo).
+  (inicio de sesión y permisos por rol, plan de estudios y generación de un horario completo).
 
 ## Licencias de terceros
 

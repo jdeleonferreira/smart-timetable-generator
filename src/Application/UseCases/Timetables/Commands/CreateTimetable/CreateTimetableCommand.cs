@@ -1,4 +1,5 @@
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.AcademicYears;
 using SmartTimetableGenerator.Domain.Campuses;
 using SmartTimetableGenerator.Domain.StudyPlans;
@@ -9,13 +10,14 @@ namespace SmartTimetableGenerator.Application.UseCases.Timetables.Commands.Creat
 /// <summary>
 /// Crea un horario vacío (borrador) para una sede y periodo, ligado al plan de estudios de la sede en ese año.
 /// </summary>
+[Authorize(Roles = Roles.Managers)]
 public sealed record CreateTimetableCommand(
     Guid AcademicYearId,
     Guid CampusId,
     Guid AcademicPeriodId,
     string? Name) : IRequest<ErrorOr<Guid>>;
 
-internal sealed class CreateTimetableCommandHandler(IApplicationDbContext dbContext)
+internal sealed class CreateTimetableCommandHandler(IApplicationDbContext dbContext, ICurrentUserService currentUser)
     : IRequestHandler<CreateTimetableCommand, ErrorOr<Guid>>
 {
     public async Task<ErrorOr<Guid>> Handle(CreateTimetableCommand request, CancellationToken cancellationToken)
@@ -39,6 +41,9 @@ internal sealed class CreateTimetableCommandHandler(IApplicationDbContext dbCont
             .FirstOrDefaultAsync(cancellationToken);
         if (campus is null)
             return CampusErrors.NotFound;
+
+        if (currentUser.EnsureCanManageCampus(campusId) is { } forbidden)
+            return forbidden;
 
         var plan = await dbContext.StudyPlans
             .WithSpecification(StudyPlanSpec.ByYearAndCampus(yearId, campusId))

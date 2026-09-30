@@ -31,8 +31,11 @@ app.MapOpenApi();
 app.MapCustomScalarApiReference();
 app.UseHealthChecks();
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseStaticFiles();
 
+app.MapAuthEndpoints();
 app.MapCatalogEndpoints();
 app.MapAreaAndGradeEndpoints();
 app.MapStudyPlanEndpoints();

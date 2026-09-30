@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.Areas;
 
 namespace SmartTimetableGenerator.Application.UseCases.Areas.Commands.AddSubject;
@@ -7,6 +8,7 @@ namespace SmartTimetableGenerator.Application.UseCases.Areas.Commands.AddSubject
 /// <summary>
 /// Agrega una asignatura a un área. La intensidad horaria por grado se define después en el plan de estudios.
 /// </summary>
+[Authorize(Roles = Roles.Admin)]
 public sealed record AddSubjectCommand(string Name, string? Code = null, int? Order = null) : IRequest<ErrorOr<Guid>>
 {
     [JsonIgnore]

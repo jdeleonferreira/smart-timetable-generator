@@ -1,4 +1,5 @@
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Domain.AcademicYears;
 using SmartTimetableGenerator.Domain.Campuses;
 using SmartTimetableGenerator.Domain.StudyPlans;
@@ -13,13 +14,14 @@ namespace SmartTimetableGenerator.Application.UseCases.StudyPlans.Commands.Creat
 /// Al copiar desde otra sede, las asignaturas en contrajornada se enlazan a la jornada de la nueva sede
 /// que tenga el mismo nombre; si no existe, la copia no se hace.
 /// </remarks>
+[Authorize(Roles = Roles.Managers)]
 public sealed record CreateStudyPlanCommand(
     Guid AcademicYearId,
     Guid CampusId,
     string? Name = null,
     Guid? CopyFromStudyPlanId = null) : IRequest<ErrorOr<Guid>>;
 
-internal sealed class CreateStudyPlanCommandHandler(IApplicationDbContext dbContext)
+internal sealed class CreateStudyPlanCommandHandler(IApplicationDbContext dbContext, ICurrentUserService currentUser)
     : IRequestHandler<CreateStudyPlanCommand, ErrorOr<Guid>>
 {
     public async Task<ErrorOr<Guid>> Handle(CreateStudyPlanCommand request, CancellationToken cancellationToken)
@@ -38,6 +40,9 @@ internal sealed class CreateStudyPlanCommandHandler(IApplicationDbContext dbCont
             .FirstOrDefaultAsync(cancellationToken);
         if (campus is null)
             return CampusErrors.NotFound;
+
+        if (currentUser.EnsureCanManageCampus(campusId) is { } forbidden)
+            return forbidden;
 
         if (await dbContext.StudyPlans.AnyAsync(p => p.AcademicYearId == yearId && p.CampusId == campusId, cancellationToken))
             return StudyPlanErrors.AlreadyExists;
