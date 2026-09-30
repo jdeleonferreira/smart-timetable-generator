@@ -1,0 +1,8 @@
+node_modules
+dist
+test-results
+playwright-report
+*.local
+
+# La carpeta publish/ del cliente generado (la raíz del repositorio ignora publish/)
+!publish/

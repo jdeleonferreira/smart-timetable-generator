@@ -70,11 +70,11 @@ public static class AuthEndpoints
             .MapPost("/", async (ISender sender, CreateUserCommand command, CancellationToken ct) =>
             {
                 var result = await sender.Send(command, ct);
-                return result.Match(id => Results.Created($"/api/users/{id}", new { id }), CustomResult.Problem);
+                return result.Match(id => Results.Created($"/api/users/{id}", new CreatedUserDto(id)), CustomResult.Problem);
             })
             .WithName("CreateUser")
             .WithSummary("Crea un usuario: role = Admin, Coordinador (con campusId) o Docente (con teacherId)")
-            .ProducesPost()
+            .ProducesPost<CreatedUserDto>()
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict);
 

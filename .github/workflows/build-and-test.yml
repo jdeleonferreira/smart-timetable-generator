@@ -91,3 +91,61 @@ jobs:
       if: success() || failure()
       run: |
         cat test-summary.md >> $GITHUB_STEP_SUMMARY
+
+  web:
+    name: "Cliente web"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/WebClient
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Setup Node
+      uses: actions/setup-node@v5
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: src/WebClient/package-lock.json
+
+    - name: Instalar dependencias
+      run: npm ci
+
+    - name: Lint y tipos
+      shell: bash
+      run: |
+        set -o pipefail
+        { npm run lint && npm run typecheck; } 2>&1 | tee ../../web-output.txt
+
+    - name: Pruebas unitarias
+      shell: bash
+      run: |
+        set -o pipefail
+        npm test 2>&1 | tee -a ../../web-output.txt
+
+    - name: Pruebas de la interfaz (API simulada)
+      shell: bash
+      run: |
+        set -o pipefail
+        npx playwright install --with-deps chromium
+        npx playwright test --project=mocked 2>&1 | tee -a ../../web-output.txt
+
+    - name: Resumen
+      if: success() || failure()
+      shell: bash
+      working-directory: .
+      run: |
+        touch web-output.txt
+        grep -E "passed|failed|✘|error TS|  error |Tests +[0-9]" web-output.txt | tr -s ' ' | head -15 \
+          | while IFS= read -r l; do echo "::notice title=Web::${l//%/%25}"; done
+
+    - name: Capturas y reporte
+      if: success() || failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: web-playwright
+        path: |
+          src/WebClient/playwright-report
+          src/WebClient/test-results
+        if-no-files-found: ignore

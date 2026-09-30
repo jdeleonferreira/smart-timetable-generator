@@ -136,10 +136,10 @@ public static void MapSpaceEndpoints(this WebApplication app)
     group.MapPost("/", async (ISender sender, CreateSpaceCommand command, CancellationToken ct) =>
     {
         var result = await sender.Send(command, ct);
-        return result.Match(_ => TypedResults.Created(), CustomResult.Problem);
+        return result.Match(id => Results.Created($"/api/spaces/{id}", new CreatedIdDto(id)), CustomResult.Problem);
     })
     .WithName("CreateSpace")
-    .ProducesPost();  // Use extension methods for consistent status codes
+    .ProducesPost<CreatedIdDto>();  // Typed responses: the web client (Kiota) is generated from them
 }
 ```
 

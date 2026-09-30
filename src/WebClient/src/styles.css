@@ -1,0 +1,45 @@
+/* Cuadrículas del plan y del horario */
+.matrix th,
+.matrix td {
+  white-space: nowrap;
+}
+
+.matrix .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--mantine-color-body);
+}
+
+.matrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--mantine-color-gray-1);
+}
+
+.matrix thead th.sticky-col {
+  z-index: 4;
+}
+
+.plan-cell {
+  cursor: default;
+  min-width: 52px;
+  text-align: center;
+}
+
+.plan-cell.editable {
+  cursor: pointer;
+}
+
+.plan-cell.editable:hover {
+  background: var(--mantine-color-blue-0);
+}
+
+.lesson-block {
+  border-left: 3px solid var(--block-color);
+  background: color-mix(in srgb, var(--block-color) 12%, transparent);
+  border-radius: 4px;
+  padding: 4px 6px;
+  min-width: 96px;
+}

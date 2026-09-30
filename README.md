@@ -16,6 +16,7 @@ src/
   Application/     Casos de uso (commands / queries)
   Infrastructure/  EF Core (SQL Server), servicios externos
   WebApi/          Endpoints REST
+  WebClient/       Cliente web (React + TypeScript + Vite, cliente de la API generado con Kiota)
 tests/             Pruebas de dominio, arquitectura e integración
 tools/
   AppHost/         Orquestación con .NET Aspire (SQL Server en contenedor)
@@ -28,6 +29,7 @@ docs/domain.md     Modelo de dominio y glosario
 - .NET SDK 10.0.100 o superior
 - Docker Desktop (Aspire levanta SQL Server en un contenedor)
 - Herramienta de EF Core: `dotnet tool install --global dotnet-ef`
+- Node.js 22 o superior (cliente web)
 
 ## Primeros pasos
 
@@ -51,7 +53,41 @@ En Development, el MigrationService carga datos de ejemplo: una sede con jornada
 el año lectivo 2026 con 4 periodos y festivos, el plan de estudios del documento institucional (Preescolar a 11º),
 dos cursos por grado con su salón, docentes ficticios por área y los proyectos de formación.
 
-La documentación de la API queda en `https://localhost:7255/scalar/v1`.
+La documentación de la API queda en `https://localhost:7255/scalar/v1`. El cliente web aparece en el panel de Aspire
+como **web** (enlace en la columna de URL); Aspire instala sus paquetes de npm al arrancar.
+
+## Cliente web (`src/WebClient`)
+
+React + TypeScript + Vite, con Mantine (componentes), React Query (datos) y React Router. Pantallas:
+
+- **Inicio de sesión** (en desarrollo muestra los usuarios de ejemplo).
+- **Plan de estudios**: la matriz del documento (áreas y asignaturas × grados) con IH, transversales (T*),
+  contrajornada (CJ) y totales por grado; por periodo se ven las IH ajustadas. El administrador y el coordinador de la
+  sede editan cada celda (IH, forma de dictarla, distribución, IH por periodo), crean el plan (vacío o copiando otro),
+  lo aprueban y lo reabren.
+- **Horarios**: listado, creación, generación (se sigue el progreso) y publicación; vistas por curso, por docente y
+  institucional por día. El docente ve solo los horarios publicados y abre directamente su horario.
+- **Usuarios** (administrador): crear, activar/desactivar y fijar una contraseña nueva.
+
+El año lectivo y la sede se eligen en la barra superior. En desarrollo, Vite reenvía `/api` a la API (sin CORS).
+
+```bash
+cd src/WebClient
+npm install
+npm run dev            # con la API corriendo en https://localhost:7255 (o API_URL=...)
+npm test               # pruebas unitarias (Vitest)
+npm run test:e2e       # pruebas de la interfaz con la API simulada (Playwright)
+```
+
+**Cliente de la API**: `src/api/generated` lo genera Kiota a partir de `openapi.json`; no se edita a mano. Cuando cambie
+la API, con la API corriendo:
+
+```bash
+npm run api:openapi    # descarga openapi.json de la API
+npm run api:generate   # regenera el cliente (usa Kiota desde dotnet-tools.json)
+```
+
+La prueba de extremo a extremo de CI hace esto sola: si el contrato cambió, regenera el cliente y lo sube a la rama.
 
 ## Usuarios y permisos
 
@@ -136,7 +172,9 @@ El horario se genera a partir del plan de estudios de la sede para el año lecti
 - **Plan de estudios** (`StudyPlans/`): catálogo, creación y copia de planes, cada regla de las asignaturas del plan,
   totales por grado y periodo, aprobación, y que el horario generado respete los cambios hechos al plan.
 - **Extremo a extremo** (workflow `e2e.yml`): SQL Server real, migración, datos de ejemplo, la API por HTTP
-  (inicio de sesión y permisos por rol, plan de estudios y generación de un horario completo).
+  (inicio de sesión y permisos por rol, plan de estudios y generación de un horario completo) y el cliente web con
+  Playwright contra esa API (totales del plan, horario de cada curso completo, permisos del docente).
+- **Cliente web** (`src/WebClient`): pruebas unitarias (Vitest) y de la interfaz con la API simulada (Playwright).
 
 ## Licencias de terceros
 

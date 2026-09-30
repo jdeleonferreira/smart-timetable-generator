@@ -66,6 +66,17 @@ var api = builder
     .WithReference(db)
     .WaitForCompletion(migrationService);
 
+// Cliente web (React + Vite). Vite reenvía /api a la API, así que el navegador no necesita CORS.
+// Solo en ejecución local; Aspire instala los paquetes de npm al arrancar.
+if (!builder.ExecutionContext.IsPublishMode)
+{
+    builder.AddViteApp("web", "../../src/WebClient")
+        .WithReference(api)
+        .WaitFor(api)
+        .WithEnvironment("API_URL", api.GetEndpoint("https"))
+        .WithExternalHttpEndpoints();
+}
+
 // Configure Application Insights and Log Analytics only if in publish mode
 // When running locally, use Aspire Dashboard instead
 if (builder.ExecutionContext.IsPublishMode)
