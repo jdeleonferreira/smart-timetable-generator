@@ -1,4 +1,6 @@
 using MediatR;
+using SmartTimetableGenerator.Application.Common.Documents;
+using SmartTimetableGenerator.Application.UseCases.Documents.Queries.GetTimetableDocument;
 using SmartTimetableGenerator.Application.UseCases.GenerationJobs.Queries.GetGenerationJob;
 using SmartTimetableGenerator.Application.UseCases.Timetables.Commands.CreateTimetable;
 using SmartTimetableGenerator.Application.UseCases.Timetables.Commands.GenerateTimetable;
@@ -73,6 +75,24 @@ public static class TimetableEndpoints
             .WithName("GetTimetableLessons")
             .WithSummary("Clases del horario. Filtre por courseId (vista por curso), teacherId (por docente) o day (institucional)")
             .ProducesGet<LessonDto[]>();
+
+        group
+            .MapGet("/{timetableId:guid}/document", async (
+                ISender sender,
+                Guid timetableId,
+                TimetableDocumentView? view,
+                ReportFormat? format,
+                Guid? courseId,
+                Guid? teacherId,
+                CancellationToken ct) =>
+            {
+                var query = new GetTimetableDocumentQuery(timetableId, view ?? TimetableDocumentView.Courses, format ?? ReportFormat.Pdf, courseId, teacherId);
+                var result = await sender.Send(query, ct);
+                return result.Match(file => Results.File(file.Content, file.ContentType, file.FileName), CustomResult.Problem);
+            })
+            .WithName("GetTimetableDocument")
+            .WithSummary("Documento del horario: view = Courses (una página por curso), Teachers (por docente) o Days (institucional); format = Pdf o Word")
+            .ProducesDocument();
 
         app.MapApiGroup("generation-jobs")
             .MapGet("/{jobId:guid}", async (ISender sender, Guid jobId, CancellationToken ct) =>

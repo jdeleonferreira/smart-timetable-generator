@@ -9,6 +9,7 @@ using SmartTimetableGenerator.Application.UseCases.Timetables.Generation;
 using SmartTimetableGenerator.Domain.Campuses;
 using SmartTimetableGenerator.Domain.Teachers;
 using SmartTimetableGenerator.Domain.TimetableGeneration;
+using SmartTimetableGenerator.Infrastructure.Documents;
 using SmartTimetableGenerator.Infrastructure.Identity;
 using SmartTimetableGenerator.Infrastructure.Persistence;
 using SmartTimetableGenerator.Infrastructure.Persistence.Interceptors;
@@ -51,6 +52,7 @@ public sealed class SchedulingTestHost : IDisposable
             .AddInterceptors(sp.GetRequiredService<EntitySaveChangesInterceptor>()));
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ITimetableSolver, CpSatTimetableSolver>();
+        services.AddSingleton<IDocumentRenderer, DocumentRenderer>();
         services.AddApplication();
 
         _provider = services.BuildServiceProvider();

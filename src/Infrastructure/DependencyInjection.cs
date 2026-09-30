@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using SmartTimetableGenerator.Application.Common.Interfaces;
 using SmartTimetableGenerator.Infrastructure.Persistence;
 using SmartTimetableGenerator.Infrastructure.BackgroundJobs;
+using SmartTimetableGenerator.Infrastructure.Documents;
 using SmartTimetableGenerator.Infrastructure.Identity;
 using SmartTimetableGenerator.Infrastructure.Persistence.Interceptors;
 using SmartTimetableGenerator.Infrastructure.Scheduling;
@@ -35,6 +36,9 @@ public static class DependencyInjection
         services.AddScoped<DispatchDomainEventsInterceptor>();
 
         services.AddSingleton(TimeProvider.System);
+
+        // Documentos en Word y PDF
+        services.AddSingleton<IDocumentRenderer, DocumentRenderer>();
 
         // Usuarios, roles y tokens JWT
         services.AddJwtAuthentication(builder.Configuration);

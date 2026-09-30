@@ -34,4 +34,12 @@ public static class EndpointRouteBuilderExt
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+    /// <summary>
+    /// Used for GET endpoints that return a document (PDF or Word).
+    /// </summary>
+    public static RouteHandlerBuilder ProducesDocument(this RouteHandlerBuilder builder) => builder
+        .Produces<byte[]>(StatusCodes.Status200OK, "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status500InternalServerError);
 }

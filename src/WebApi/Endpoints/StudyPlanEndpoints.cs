@@ -1,4 +1,6 @@
 using MediatR;
+using SmartTimetableGenerator.Application.Common.Documents;
+using SmartTimetableGenerator.Application.UseCases.Documents.Queries.GetStudyPlanDocument;
 using SmartTimetableGenerator.Application.UseCases.StudyPlans.Commands.AddStudyPlanItem;
 using SmartTimetableGenerator.Application.UseCases.StudyPlans.Commands.ApproveStudyPlan;
 using SmartTimetableGenerator.Application.UseCases.StudyPlans.Commands.CreateStudyPlan;
@@ -35,6 +37,16 @@ public static class StudyPlanEndpoints
             .WithName("GetStudyPlan")
             .WithSummary("Plan completo: áreas y asignaturas (filas), grados (columnas), IH y totales por grado y periodo")
             .ProducesGet<StudyPlanDto>();
+
+        group
+            .MapGet("/{studyPlanId:guid}/document", async (ISender sender, Guid studyPlanId, ReportFormat? format, Guid? academicPeriodId, CancellationToken ct) =>
+            {
+                var result = await sender.Send(new GetStudyPlanDocumentQuery(studyPlanId, format ?? ReportFormat.Pdf, academicPeriodId), ct);
+                return result.Match(file => Results.File(file.Content, file.ContentType, file.FileName), CustomResult.Problem);
+            })
+            .WithName("GetStudyPlanDocument")
+            .WithSummary("Documento del plan de estudios (format = Pdf o Word); con academicPeriodId, las IH de ese periodo")
+            .ProducesDocument();
 
         group
             .MapPost("/", async (ISender sender, CreateStudyPlanCommand command, CancellationToken ct) =>
