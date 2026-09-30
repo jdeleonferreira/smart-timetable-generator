@@ -6,6 +6,8 @@ import { createHttpValidationProblemDetailsFromDiscriminatorValue, createProblem
 // @ts-ignore
 import { ApproveRequestBuilderRequestsMetadata, type ApproveRequestBuilder } from './approve/index.js';
 // @ts-ignore
+import { DocumentRequestBuilderRequestsMetadata, type DocumentRequestBuilder } from './document/index.js';
+// @ts-ignore
 import { ItemsRequestBuilderNavigationMetadata, ItemsRequestBuilderRequestsMetadata, type ItemsRequestBuilder } from './items/index.js';
 // @ts-ignore
 import { ReopenRequestBuilderRequestsMetadata, type ReopenRequestBuilder } from './reopen/index.js';
@@ -20,6 +22,10 @@ export interface WithStudyPlanItemRequestBuilder extends BaseRequestBuilder<With
      * The approve property
      */
     get approve(): ApproveRequestBuilder;
+    /**
+     * The document property
+     */
+    get document(): DocumentRequestBuilder;
     /**
      * The items property
      */
@@ -68,6 +74,9 @@ export const WithStudyPlanItemRequestBuilderUriTemplate = "{+baseurl}/api/study-
 export const WithStudyPlanItemRequestBuilderNavigationMetadata: Record<Exclude<keyof WithStudyPlanItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     approve: {
         requestsMetadata: ApproveRequestBuilderRequestsMetadata,
+    },
+    document: {
+        requestsMetadata: DocumentRequestBuilderRequestsMetadata,
     },
     items: {
         requestsMetadata: ItemsRequestBuilderRequestsMetadata,

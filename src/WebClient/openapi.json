@@ -1299,6 +1299,80 @@
         }
       }
     },
+    "/api/study-plans/{studyPlanId}/document": {
+      "get": {
+        "tags": [
+          "study-plans"
+        ],
+        "summary": "Documento del plan de estudios (format = Pdf o Word); con academicPeriodId, las IH de ese periodo",
+        "operationId": "GetStudyPlanDocument",
+        "parameters": [
+          {
+            "name": "studyPlanId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ReportFormat"
+            }
+          },
+          {
+            "name": "academicPeriodId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/study-plans/{studyPlanId}/approve": {
       "post": {
         "tags": [
@@ -2065,6 +2139,95 @@
           },
           "404": {
             "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/timetables/{timetableId}/document": {
+      "get": {
+        "tags": [
+          "timetables"
+        ],
+        "summary": "Documento del horario: view = Courses (una página por curso), Teachers (por docente) o Days (institucional); format = Pdf o Word",
+        "operationId": "GetTimetableDocument",
+        "parameters": [
+          {
+            "name": "timetableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TimetableDocumentView"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ReportFormat"
+            }
+          },
+          {
+            "name": "courseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "teacherId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           },
           "500": {
             "description": "Internal Server Error",
@@ -2954,6 +3117,13 @@
           }
         }
       },
+      "ReportFormat": {
+        "enum": [
+          "Pdf",
+          "Word",
+          null
+        ]
+      },
       "ResetUserPasswordCommand": {
         "required": [
           "newPassword"
@@ -3618,6 +3788,14 @@
             "type": "boolean"
           }
         }
+      },
+      "TimetableDocumentView": {
+        "enum": [
+          "Courses",
+          "Teachers",
+          "Days",
+          null
+        ]
       },
       "TimetableSummaryDto": {
         "required": [

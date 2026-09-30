@@ -1642,6 +1642,7 @@ export interface ProblemDetails extends AdditionalDataHolder, ApiError, Parsable
      */
     type?: string | null;
 }
+export type ReportFormat = (typeof ReportFormatObject)[keyof typeof ReportFormatObject];
 export interface ResetUserPasswordCommand extends AdditionalDataHolder, Parsable {
     /**
      * The newPassword property
@@ -2763,6 +2764,7 @@ export interface TeacherDto extends AdditionalDataHolder, Parsable {
      */
     maxWeeklyHours?: number | null;
 }
+export type TimetableDocumentView = (typeof TimetableDocumentViewObject)[keyof typeof TimetableDocumentViewObject];
 export interface TimetableSummaryDto extends AdditionalDataHolder, Parsable {
     /**
      * The academicPeriodId property
@@ -2951,6 +2953,11 @@ export const EducationLevelObject = {
     LowerSecondary: "LowerSecondary",
     UpperSecondary: "UpperSecondary",
 } as const;
+export const ReportFormatObject = {
+    Pdf: "Pdf",
+    Word: "Word",
+    OpenapiJsonNullSentinelValue2BF936000FE44250987AE5DDB203E464: "openapi-json-null-sentinel-value-2BF93600-0FE4-4250-987A-E5DDB203E464",
+} as const;
 export const SpaceTypeObject = {
     Classroom: "Classroom",
     Library: "Library",
@@ -2964,6 +2971,12 @@ export const SpaceTypeObject = {
 export const StudyPlanStatusObject = {
     Draft: "Draft",
     Approved: "Approved",
+} as const;
+export const TimetableDocumentViewObject = {
+    Courses: "Courses",
+    Teachers: "Teachers",
+    Days: "Days",
+    OpenapiJsonNullSentinelValue2BF936000FE44250987AE5DDB203E464: "openapi-json-null-sentinel-value-2BF93600-0FE4-4250-987A-E5DDB203E464",
 } as const;
 /* tslint:enable */
 /* eslint-enable */
