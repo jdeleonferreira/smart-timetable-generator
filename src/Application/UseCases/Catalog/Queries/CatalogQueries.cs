@@ -74,7 +74,20 @@ internal sealed class GetCoursesQueryHandler(IApplicationDbContext dbContext)
 
 public sealed record GetTeachersQuery : IRequest<IReadOnlyList<TeacherDto>>;
 
-public sealed record TeacherDto(Guid Id, string FullName, string? Email, int MaxWeeklyHours, int? MaxDailyHours, IReadOnlyList<string> Areas, bool IsActive);
+public sealed record TeacherDto(
+    Guid Id,
+    string FullName,
+    string? Email,
+    int MaxWeeklyHours,
+    int? MaxDailyHours,
+    IReadOnlyList<string> Areas,
+    bool IsActive,
+    string FirstName,
+    string LastName,
+    string? Phone,
+    int? MaxGapsPerDay,
+    IReadOnlyList<Guid> AreaIds,
+    IReadOnlyList<Guid> CampusIds);
 
 internal sealed class GetTeachersQueryHandler(IApplicationDbContext dbContext)
     : IRequestHandler<GetTeachersQuery, IReadOnlyList<TeacherDto>>
@@ -87,7 +100,9 @@ internal sealed class GetTeachersQueryHandler(IApplicationDbContext dbContext)
         return teachers
             .OrderBy(t => t.LastName).ThenBy(t => t.FirstName)
             .Select(t => new TeacherDto(t.Id.Value, t.FullName, t.Email, t.MaxWeeklyHours, t.MaxDailyHours,
-                t.Areas.Select(a => areas.GetValueOrDefault(a.AreaId, "?")).ToList(), t.IsActive))
+                t.Areas.Select(a => areas.GetValueOrDefault(a.AreaId, "?")).ToList(), t.IsActive,
+                t.FirstName, t.LastName, t.Phone, t.MaxGapsPerDay,
+                t.Areas.Select(a => a.AreaId.Value).ToList(), t.Campuses.Select(c => c.CampusId.Value).ToList()))
             .ToList();
     }
 }
