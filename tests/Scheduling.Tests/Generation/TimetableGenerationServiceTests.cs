@@ -344,6 +344,52 @@ public sealed class TimetableGenerationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task NoTeachersAtAll_ShouldStillGenerateTheTimetable_SoTeachersCanBeAssignedLater()
+    {
+        var school = new TestSchool();
+        foreach (var teacher in school.Teachers)
+            teacher.Deactivate();
+
+        var result = await GenerateAsync(school);
+
+        result.Job.Status.Should().Be(GenerationJobStatus.Succeeded, result.Job.Message);
+        result.Timetable.Lessons.Should().HaveCount(4 * TestSchool.BaseWeeklyHours);
+        result.Timetable.Lessons.Should().OnlyContain(l => l.TeacherId == null);
+    }
+
+    [Fact]
+    public async Task CoursesSharingAClassroom_ShouldNotFailTheGeneration()
+    {
+        var school = new TestSchool();
+        var sixth = school.CoursesOf(school.Sixth).ToList();
+        sixth[1].AssignHomeRoom(sixth[0].HomeRoomId);
+
+        var result = await GenerateAsync(school);
+
+        result.Job.Status.Should().Be(GenerationJobStatus.Succeeded, result.Job.Message);
+        result.Timetable.Lessons.Should().HaveCount(4 * TestSchool.BaseWeeklyHours);
+        result.Timetable.Lessons
+            .Where(l => l.SpaceId is not null)
+            .GroupBy(l => (l.ShiftId, l.Day, l.PeriodNumber, l.SpaceId))
+            .Should().OnlyContain(g => g.Count() == 1);
+    }
+
+    [Fact]
+    public async Task ClassroomThatIsAlsoASpecialSpace_ShouldBeRespectedBySolver()
+    {
+        var school = new TestSchool();
+        school.CoursesOf(school.Sixth).First().AssignHomeRoom(school.ComputerLab.Id);
+
+        var result = await GenerateAsync(school);
+
+        result.Job.Status.Should().Be(GenerationJobStatus.Succeeded, result.Job.Message);
+        result.Timetable.Lessons
+            .Where(l => l.SpaceId == school.ComputerLab.Id)
+            .GroupBy(l => (l.ShiftId, l.Day, l.PeriodNumber))
+            .Should().OnlyContain(g => g.Count() == 1);
+    }
+
+    [Fact]
     public async Task TeacherWithoutEnoughHours_ShouldNotBeOverloaded()
     {
         var school = new TestSchool();
