@@ -51,7 +51,7 @@ export function LoginPage() {
         <Stack gap="md" maw={420}>
           <div className="hero-rule" />
           <Title order={1} fz={38} lh={1.2}>
-            Gestión de horarios escolares
+            Plan de estudios y horarios, en un solo lugar
           </Title>
           <Text c="navy.1" size="md" lh={1.6}>
             Planifica el plan de estudios, genera los horarios de cada curso y consulta la carga de cada docente en un solo lugar.
