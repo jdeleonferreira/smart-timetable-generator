@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AppHost.Commands;
 using Azure.Provisioning;
 using Azure.Provisioning.AppService;
@@ -74,7 +75,18 @@ if (!builder.ExecutionContext.IsPublishMode)
         .WithReference(api)
         .WaitFor(api)
         .WithEnvironment("API_URL", api.GetEndpoint("https"))
-        .WithExternalHttpEndpoints();
+        .WithExternalHttpEndpoints()
+        // Abre el cliente web en el navegador cuando está listo (en CI no hay navegador que abrir).
+        .OnResourceReady((web, _, _) =>
+        {
+            if (Environment.GetEnvironmentVariable("CI") is null)
+            {
+                var url = web.GetEndpoint("http").Url;
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+
+            return Task.CompletedTask;
+        });
 }
 
 // Configure Application Insights and Log Analytics only if in publish mode
