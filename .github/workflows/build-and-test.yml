@@ -1,0 +1,151 @@
+name: Build and test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: "Build" 
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Cache
+      uses: actions/cache@v6
+      with:    
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}    
+        restore-keys: |      
+          ${{ runner.os }}-nuget-
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+
+    - name: Restore dependencies
+      shell: bash
+      run: |
+        set -o pipefail
+        dotnet restore 2>&1 | tee restore-output.txt
+
+    - name: Build
+      shell: bash
+      run: |
+        set -o pipefail
+        dotnet build --no-restore --configuration Release 2>&1 | tee build-output.txt
+
+    - name: Test
+      shell: bash
+      run: |
+        set -o pipefail
+        dotnet test --no-build --no-restore --configuration Release -- --report-xunit-trx 2>&1 | tee test-output.txt
+
+    - name: Resumen de pruebas
+      if: success() || failure()
+      shell: bash
+      run: |
+        touch test-output.txt
+        grep -iE "summary|total|succeeded|passed|failed" test-output.txt | grep -v "^\s*at " | tr -s ' ' \
+          | sed 's#/home/runner/work/[^ ]*/##' | head -12 | while IFS= read -r l; do echo "::notice title=Pruebas::$l"; done
+
+    - name: Report failures
+      if: failure()
+      shell: bash
+      run: |
+        # Publica las líneas relevantes de restore/build/test como anotaciones (visibles en el resumen de la ejecución)
+        touch restore-output.txt build-output.txt test-output.txt
+        { grep -E "error [A-Z]+[0-9]+|warning NU[0-9]+" restore-output.txt build-output.txt | sort -u
+          grep -E -A6 "failed|Failed|zero tests|Zero tests|Expected|Esperado|types failed" test-output.txt; } \
+          | grep -v "^\s*$" | grep -v "^\s*at " | head -40 > failures.txt || true
+        {
+          echo "## Fallos"
+          echo '```'
+          cat failures.txt
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+        i=0
+        while IFS= read -r line && [ $i -lt 10 ]; do
+          echo "::error title=Fallo::${line//%/%25}"
+          i=$((i+1))
+        done < failures.txt
+
+    - name: Publish
+      run: dotnet publish src/WebApi/WebApi.csproj --no-build --no-restore --configuration Release --output ./publish
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: published-files
+        path: ./publish
+
+    - name: Test Report
+      uses: test-summary/action@v2
+      if: success() || failure()
+      with:
+        paths: ./**/test-result.xml
+        output: test-summary.md
+    - name: Output job summary
+      if: success() || failure()
+      run: |
+        cat test-summary.md >> $GITHUB_STEP_SUMMARY
+
+  web:
+    name: "Cliente web"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/WebClient
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Setup Node
+      uses: actions/setup-node@v5
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: src/WebClient/package-lock.json
+
+    - name: Instalar dependencias
+      run: npm ci
+
+    - name: Lint y tipos
+      shell: bash
+      run: |
+        set -o pipefail
+        { npm run lint && npm run typecheck; } 2>&1 | tee ../../web-output.txt
+
+    - name: Pruebas unitarias
+      shell: bash
+      run: |
+        set -o pipefail
+        npm test 2>&1 | tee -a ../../web-output.txt
+
+    - name: Pruebas de la interfaz (API simulada)
+      shell: bash
+      run: |
+        set -o pipefail
+        npx playwright install --with-deps chromium
+        npx playwright test --project=mocked 2>&1 | tee -a ../../web-output.txt
+
+    - name: Resumen
+      if: success() || failure()
+      shell: bash
+      working-directory: .
+      run: |
+        touch web-output.txt
+        grep -E "passed|failed|✘|error TS|  error |Tests +[0-9]" web-output.txt | tr -s ' ' | head -15 \
+          | while IFS= read -r l; do echo "::notice title=Web::${l//%/%25}"; done
+
+    - name: Capturas y reporte
+      if: success() || failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: web-playwright
+        path: |
+          src/WebClient/playwright-report
+          src/WebClient/test-results
+        if-no-files-found: ignore

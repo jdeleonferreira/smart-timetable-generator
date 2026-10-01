@@ -1,0 +1,222 @@
+@baseUrl = https://localhost:7255/api
+
+### 0. Iniciar sesión. Usuarios de ejemplo (Development):
+###    admin@colegio.local / Admin2026 · coordinador@colegio.local / Coordinador2026 · docente@colegio.local / Docente2026
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@colegio.local",
+  "password": "Admin2026"
+}
+
+@token = {{login.response.body.$.accessToken}}
+
+### Usuario actual
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### 1. Año lectivo y periodos (copie academicYearId y el id del Periodo 1)
+GET {{baseUrl}}/catalog/academic-years
+Authorization: Bearer {{token}}
+
+### 2. Sedes (copie campusId)
+GET {{baseUrl}}/catalog/campuses
+Authorization: Bearer {{token}}
+
+@academicYearId = pegue-aqui-el-id
+@campusId = pegue-aqui-el-id
+@periodId = pegue-aqui-el-id
+
+### 3. Crear el horario en borrador (copie el id de la respuesta)
+POST {{baseUrl}}/timetables
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "academicYearId": "{{academicYearId}}",
+  "campusId": "{{campusId}}",
+  "academicPeriodId": "{{periodId}}",
+  "name": null
+}
+
+@timetableId = pegue-aqui-el-id
+
+### 4. Generar (en segundo plano; copie jobId)
+POST {{baseUrl}}/timetables/{{timetableId}}/generate?timeLimitSeconds=180
+Authorization: Bearer {{token}}
+
+@jobId = pegue-aqui-el-id
+
+### 5. Estado de la generación (repita hasta que isFinished = true)
+GET {{baseUrl}}/generation-jobs/{{jobId}}
+Authorization: Bearer {{token}}
+
+### 6. Cursos (copie un courseId)
+GET {{baseUrl}}/catalog/courses?academicYearId={{academicYearId}}&campusId={{campusId}}
+Authorization: Bearer {{token}}
+
+@courseId = pegue-aqui-el-id
+
+### 7a. Horario de un curso
+GET {{baseUrl}}/timetables/{{timetableId}}/lessons?courseId={{courseId}}
+Authorization: Bearer {{token}}
+
+### 7b. Horario institucional de un día
+GET {{baseUrl}}/timetables/{{timetableId}}/lessons?day=Wednesday
+Authorization: Bearer {{token}}
+
+### 7c. Horario de un docente (ids en /catalog/teachers)
+GET {{baseUrl}}/catalog/teachers
+Authorization: Bearer {{token}}
+
+### 8. Publicar
+POST {{baseUrl}}/timetables/{{timetableId}}/publish
+Authorization: Bearer {{token}}
+
+### ===================== Plan de estudios =====================
+
+### Catálogo: grados y áreas con sus asignaturas (copie gradeId y subjectId)
+GET {{baseUrl}}/grades
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/areas
+Authorization: Bearer {{token}}
+
+### Planes de estudio del año y sede (copie el id)
+GET {{baseUrl}}/study-plans?academicYearId={{academicYearId}}&campusId={{campusId}}
+Authorization: Bearer {{token}}
+
+@studyPlanId = pegue-aqui-el-id
+
+### Plan completo: áreas/asignaturas × grados, IH y totales por grado y periodo
+GET {{baseUrl}}/study-plans/{{studyPlanId}}
+Authorization: Bearer {{token}}
+
+### Crear el plan de otro año copiando uno existente (sin copyFromStudyPlanId se crea vacío)
+POST {{baseUrl}}/study-plans
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "academicYearId": "id-del-otro-año",
+  "campusId": "{{campusId}}",
+  "name": null,
+  "copyFromStudyPlanId": "{{studyPlanId}}"
+}
+
+@gradeId = pegue-aqui-el-id
+@subjectId = pegue-aqui-el-id
+
+### Agregar una asignatura a un grado (deliveryMode: Regular, Transversal o CounterShift)
+POST {{baseUrl}}/study-plans/{{studyPlanId}}/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "gradeId": "{{gradeId}}",
+  "subjectId": "{{subjectId}}",
+  "deliveryMode": "Regular",
+  "weeklyHours": 2,
+  "note": null
+}
+
+@itemId = pegue-aqui-el-id
+
+### Cambiar la IH o la forma de dictarla
+PUT {{baseUrl}}/study-plans/{{studyPlanId}}/items/{{itemId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "deliveryMode": "Regular",
+  "weeklyHours": 3
+}
+
+### Distribución: máximo por día, máximo seguidas (2 = bloques dobles) y espacio (ej.: ComputerLab)
+PUT {{baseUrl}}/study-plans/{{studyPlanId}}/items/{{itemId}}/distribution
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maxHoursPerDay": 2,
+  "maxConsecutiveHours": 2,
+  "requiredSpaceType": null
+}
+
+### IH distinta en un periodo (null = vuelve a la IH general)
+PUT {{baseUrl}}/study-plans/{{studyPlanId}}/items/{{itemId}}/periods/{{periodId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "weeklyHours": 4
+}
+
+### Quitar la asignatura del grado
+DELETE {{baseUrl}}/study-plans/{{studyPlanId}}/items/{{itemId}}
+Authorization: Bearer {{token}}
+
+### Aprobar (queda cerrado a cambios) y reabrir
+POST {{baseUrl}}/study-plans/{{studyPlanId}}/approve
+Authorization: Bearer {{token}}
+
+###
+POST {{baseUrl}}/study-plans/{{studyPlanId}}/reopen
+Authorization: Bearer {{token}}
+
+
+### ===================== Usuarios (administrador) =====================
+
+###
+GET {{baseUrl}}/users
+Authorization: Bearer {{token}}
+
+### Crear un coordinador (role: Admin, Coordinador con campusId, Docente con teacherId)
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "coordinadora.norte@colegio.local",
+  "fullName": "Coordinadora Sede Norte",
+  "role": "Coordinador",
+  "password": "Cambiar2026",
+  "campusId": "{{campusId}}"
+}
+
+@userId = pegue-aqui-el-id
+
+### Desactivar un usuario (sus sesiones abiertas dejan de valer)
+PUT {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "coordinadora.norte@colegio.local",
+  "fullName": "Coordinadora Sede Norte",
+  "role": "Coordinador",
+  "campusId": "{{campusId}}",
+  "isActive": false
+}
+
+### Nueva contraseña para un usuario (y desbloqueo)
+POST {{baseUrl}}/users/{{userId}}/reset-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "newPassword": "Temporal2026"
+}
+
+### Cambiar la contraseña propia
+POST {{baseUrl}}/auth/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Admin2026",
+  "newPassword": "OtraClave2026"
+}

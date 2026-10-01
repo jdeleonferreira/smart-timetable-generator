@@ -1,0 +1,12 @@
+import { createTheme } from '@mantine/core';
+
+export const theme = createTheme({
+  primaryColor: 'blue',
+  defaultRadius: 'md',
+  fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  headings: { fontWeight: '650' },
+  components: {
+    Button: { defaultProps: { radius: 'md' } },
+    Paper: { defaultProps: { radius: 'md' } }
+  }
+});

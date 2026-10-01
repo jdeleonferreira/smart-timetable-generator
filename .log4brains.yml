@@ -1,0 +1,5 @@
+project:
+  name: SmartTimetableGenerator
+  tz: America/Bogota
+  adrFolder: ./docs/adr
+  packages: []

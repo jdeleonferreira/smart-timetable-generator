@@ -1,0 +1,182 @@
+# Smart Timetable Generator
+
+Generador de horarios escolares a partir del plan de estudios. Gestiona el plan de estudios por año lectivo y sede
+(áreas, asignaturas, intensidad horaria por grado) y genera los horarios semanales por curso, por docente e institucionales,
+además del calendario por fechas reales.
+
+Arquitectura limpia (Clean Architecture) con patrones tácticos de DDD, CQRS con MediatR, minimal APIs, EF Core,
+identificadores fuertemente tipados (Vogen), patrón resultado (ErrorOr) y .NET Aspire, sobre .NET 10.
+Las decisiones de arquitectura y sus razones están en [`docs/adr`](docs/adr/README.md).
+
+## Estructura
+
+```
+src/
+  Domain/          Entidades, reglas de negocio, especificaciones
+  Application/     Casos de uso (commands / queries)
+  Infrastructure/  EF Core (SQL Server), servicios externos
+  WebApi/          Endpoints REST
+  WebClient/       Cliente web (React + TypeScript + Vite, cliente de la API generado con Kiota)
+tests/             Pruebas de dominio, arquitectura e integración
+tools/
+  AppHost/         Orquestación con .NET Aspire (SQL Server en contenedor)
+  MigrationService Aplica migraciones y carga datos de ejemplo
+docs/domain.md     Modelo de dominio y glosario
+```
+
+## Requisitos
+
+- .NET SDK 10.0.100 o superior
+- Docker Desktop (Aspire levanta SQL Server en un contenedor)
+- Herramienta de EF Core: `dotnet tool install --global dotnet-ef`
+- Node.js 22 o superior (cliente web)
+
+## Primeros pasos
+
+```bash
+# 1. Restaurar y compilar
+dotnet build
+
+# 2. Crear la migración inicial (una sola vez)
+dotnet ef migrations add Initial --project ./src/Infrastructure --startup-project ./src/WebApi --output-dir ./Persistence/Migrations
+
+# 3. Pruebas
+dotnet test tests/Domain.UnitTests
+dotnet test tests/Architecture.Tests
+dotnet test tests/Scheduling.Tests     # generación de horarios (unos 3 minutos)
+
+# 4. Ejecutar (desde la raíz)
+dotnet run --project tools/AppHost
+```
+
+En Development, el MigrationService carga datos de ejemplo: una sede con jornada mañana, tipos de jornada A (45 min) y B (40 min),
+el año lectivo 2026 con 4 periodos y festivos, el plan de estudios del documento institucional (Preescolar a 11º),
+dos cursos por grado con su salón, docentes ficticios por área y los proyectos de formación.
+
+La documentación de la API queda en `https://localhost:7255/scalar/v1`. El cliente web aparece en el panel de Aspire
+como **web** (enlace en la columna de URL); Aspire instala sus paquetes de npm al arrancar.
+
+## Cliente web (`src/WebClient`)
+
+React + TypeScript + Vite, con Mantine (componentes), React Query (datos) y React Router. Pantallas:
+
+- **Inicio de sesión** (en desarrollo muestra los usuarios de ejemplo).
+- **Plan de estudios**: la matriz del documento (áreas y asignaturas × grados) con IH, transversales (T*),
+  contrajornada (CJ) y totales por grado; por periodo se ven las IH ajustadas. El administrador y el coordinador de la
+  sede editan cada celda (IH, forma de dictarla, distribución, IH por periodo), crean el plan (vacío o copiando otro),
+  lo aprueban y lo reabren.
+- **Horarios**: listado, creación, generación (se sigue el progreso) y publicación; vistas por curso, por docente y
+  institucional por día. El docente ve solo los horarios publicados y abre directamente su horario.
+- **Usuarios** (administrador): crear, activar/desactivar y fijar una contraseña nueva.
+
+El año lectivo y la sede se eligen en la barra superior. En desarrollo, Vite reenvía `/api` a la API (sin CORS).
+
+```bash
+cd src/WebClient
+npm install
+npm run dev            # con la API corriendo en https://localhost:7255 (o API_URL=...)
+npm test               # pruebas unitarias (Vitest)
+npm run test:e2e       # pruebas de la interfaz con la API simulada (Playwright)
+```
+
+**Cliente de la API**: `src/api/generated` lo genera Kiota a partir de `openapi.json`; no se edita a mano. Cuando cambie
+la API, con la API corriendo:
+
+```bash
+npm run api:openapi    # descarga openapi.json de la API
+npm run api:generate   # regenera el cliente (usa Kiota desde dotnet-tools.json)
+```
+
+La prueba de extremo a extremo de CI hace esto sola: si el contrato cambió, regenera el cliente y lo sube a la rama.
+
+## Usuarios y permisos
+
+Todos los endpoints piden sesión salvo `POST /api/auth/login`, que devuelve un token para enviar en
+`Authorization: Bearer …` (en Scalar, péguelo en *Authentication*). El token dura 8 horas.
+
+| Rol | Puede |
+|---|---|
+| **Admin** | Todo: catálogos (grados, áreas, asignaturas), usuarios, planes y horarios de todas las sedes |
+| **Coordinador** | Plan de estudios y horarios (crear, generar, publicar) de **su** sede; consultar lo demás |
+| **Docente** | Consultar el plan de estudios y los horarios **publicados** |
+
+En Development se crean estos usuarios de ejemplo:
+
+| Correo | Contraseña | Rol |
+|---|---|---|
+| `admin@colegio.local` | `Admin2026` | Admin |
+| `coordinador@colegio.local` | `Coordinador2026` | Coordinador de la Sede Principal |
+| `docente@colegio.local` | `Docente2026` | Docente (vinculado al primer docente) |
+
+El administrador crea los demás en `/api/users`. Cambiar la contraseña, el rol o la sede de un usuario, o
+desactivarlo, cierra sus sesiones. Tras 5 intentos fallidos la cuenta se bloquea 5 minutos (el administrador puede
+fijarle una contraseña nueva y desbloquearla).
+
+**Fuera de Development** configure, como secreto o variable de entorno:
+
+- `Jwt__SigningKey` en la API: llave de al menos 32 caracteres.
+- `InitialAdmin__Email` e `InitialAdmin__Password` en el MigrationService: el primer administrador.
+
+## Generar un horario de prueba
+
+Con la solución corriendo (`dotnet run --project tools/AppHost`), en Scalar o con `src/WebApi/WebApi.http`:
+
+0. `POST /api/auth/login` con `admin@colegio.local` / `Admin2026` y use el token en las demás peticiones.
+1. `GET /api/catalog/academic-years` → copie el id del año 2026 y del **Periodo 1**.
+2. `GET /api/catalog/campuses` → copie el id de la **Sede Principal**.
+3. `POST /api/timetables` con `{ "academicYearId", "campusId", "academicPeriodId" }` → devuelve el id del horario.
+4. `POST /api/timetables/{id}/generate` → devuelve `jobId`. La generación corre en segundo plano (hasta 180 s por defecto;
+   termina antes si encuentra la solución óptima).
+5. `GET /api/generation-jobs/{jobId}` → repita hasta que `isFinished` sea `true`. `message` resume el resultado.
+6. `GET /api/timetables/{id}/lessons?courseId=…` (por curso), `?teacherId=…` (por docente) o `?day=Wednesday` (institucional).
+7. `POST /api/timetables/{id}/publish` para publicarlo.
+
+## Gestionar el plan de estudios
+
+El horario se genera a partir del plan de estudios de la sede para el año lectivo. Endpoints (ejemplos en `src/WebApi/WebApi.http`):
+
+- `GET /api/grades`, `GET /api/areas`: catálogo de grados y de áreas con sus asignaturas (se crean y editan con `POST`/`PUT`;
+  las asignaturas no se borran, se desactivan con `isActive: false`).
+- `GET /api/study-plans?academicYearId=…&campusId=…`: planes de estudio.
+- `GET /api/study-plans/{id}`: el plan con la forma del documento: áreas y asignaturas en filas, grados en columnas,
+  la IH de cada asignatura por grado y los totales semanales de cada grado (generales y por periodo).
+- `POST /api/study-plans`: crea el plan de una sede y año, vacío o copiando otro (`copyFromStudyPlanId`, normalmente el del año anterior).
+- `POST /api/study-plans/{id}/items`: agrega una asignatura a un grado con su IH y forma de dictarla
+  (`Regular`, `Transversal` integrada en otra asignatura, o `CounterShift` en otra jornada). `PUT` y `DELETE` sobre
+  `/items/{itemId}` la cambian o la quitan; `/items/{itemId}/distribution` fija el máximo por día, el máximo seguidas
+  y el espacio requerido; `/items/{itemId}/periods/{periodId}` fija una IH distinta en un periodo.
+- `POST /api/study-plans/{id}/approve` y `/reopen`: un plan aprobado no admite cambios hasta que se reabre.
+
+### Cómo genera
+
+1. **Asignación académica**: respeta las asignaciones manuales; para el resto propone un docente del área de la asignatura,
+   con carga disponible, prefiriendo el mismo docente para los cursos del mismo grado. Las propuestas se guardan.
+2. **Espacios**: las asignaturas que requieren un tipo de espacio (ej.: sala de informática) reciben uno de ese tipo;
+   las demás usan el salón del curso.
+3. **Programación (CP-SAT)**, por jornada: intensidad horaria exacta, un curso/docente/espacio por franja, máximo de horas
+   por día y seguidas, bloques dobles, carga diaria pareja del curso, máximo diario del docente, disponibilidad del docente,
+   clases del docente en otras sedes, clases fijadas y asignaturas en contrajornada. Minimiza huecos en la jornada del curso;
+   si algo no cabe, lo deja sin ubicar y lo informa en lugar de fallar.
+
+## Pruebas de la aplicación (`tests/Scheduling.Tests`)
+
+- **Motor** (`Solver/`): escenarios con resultado conocido (bloques dobles, máximos por día y seguidos, franjas bloqueadas
+  y fijadas, carga diaria, sobrecupo con el faltante exacto, casos imposibles, sin huecos) y 24 problemas aleatorios
+  reproducibles. Cada solución la revisa `SolutionValidator`, que comprueba todas las reglas sin reutilizar código del motor.
+- **Servicio y API** (`Generation/`): la aplicación real (MediatR, validadores, EF Core con SQLite en memoria y CP-SAT)
+  sobre un colegio de prueba (`TestSchool`). Cada horario lo revisa `TimetableValidator`: intensidad horaria exacta,
+  ningún curso/docente/espacio en dos lugares a la vez (también entre jornadas y sedes), área, carga semanal y diaria del
+  docente, disponibilidad, espacios, contrajornada y coherencia con la asignación académica guardada.
+- **Seguridad** (`Security/`): permisos por rol y sede para cada comando, docentes solo con horarios publicados,
+  y usuarios con ASP.NET Identity real (reglas por rol, token JWT, bloqueo, contraseñas, último administrador).
+- **Plan de estudios** (`StudyPlans/`): catálogo, creación y copia de planes, cada regla de las asignaturas del plan,
+  totales por grado y periodo, aprobación, y que el horario generado respete los cambios hechos al plan.
+- **Extremo a extremo** (workflow `e2e.yml`): SQL Server real, migración, datos de ejemplo, la API por HTTP
+  (inicio de sesión y permisos por rol, plan de estudios y generación de un horario completo) y el cliente web con
+  Playwright contra esa API (totales del plan, horario de cada curso completo, permisos del docente).
+- **Cliente web** (`src/WebClient`): pruebas unitarias (Vitest) y de la interfaz con la API simulada (Playwright).
+
+## Licencias de terceros
+
+Parte del código de infraestructura proviene de una plantilla publicada con licencia MIT; su aviso de copyright se
+conserva en [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md), como exige esa licencia.
