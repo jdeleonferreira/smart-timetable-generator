@@ -176,6 +176,25 @@ public sealed class TimetableGenerationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task TeacherAvoidedSlots_ShouldBeAvoidedWhenThereIsAnotherOption_WithoutLeavingHoursUnplaced()
+    {
+        var school = new TestSchool();
+        // Prefiere no dar clase a primera hora (7:00-7:50) ningún día
+        school.MathTeacher.SetAvailability(
+            Enum.GetValues<DayOfWeek>()
+                .Where(d => d is >= DayOfWeek.Monday and <= DayOfWeek.Friday)
+                .Select(d => new AvailabilityRule(d, new TimeOnly(7, 0), new TimeOnly(7, 50), AvailabilityKind.Avoid))
+                .ToList()).IsError.Should().BeFalse();
+
+        var result = await GenerateAsync(school);
+
+        result.Job.Status.Should().Be(GenerationJobStatus.Succeeded, result.Job.Message);
+        result.Timetable.Lessons.Where(l => l.TeacherId == school.MathTeacher.Id)
+            .Should().OnlyContain(l => l.PeriodNumber != 1 || l.ShiftId != school.Morning.Id);
+        result.Timetable.Lessons.Should().HaveCount(4 * TestSchool.BaseWeeklyHours);
+    }
+
+    [Fact]
     public async Task TeacherUnavailability_ShouldNeverBeViolated()
     {
         var school = new TestSchool();

@@ -20,6 +20,9 @@ public sealed class CpSatTimetableSolver(ILogger<CpSatTimetableSolver> logger) :
     private const int DailyMinimumShortfallPenalty = 50;
     private const int CourseGapPenalty = 3;
 
+    /// <summary>Preferencia del docente por no dictar clase en una franja: pesa más que un hueco del curso, mucho menos que dejar una hora sin ubicar.</summary>
+    private const int AvoidedSlotPenalty = 8;
+
     public Task<SchedulingSolution> SolveAsync(SchedulingProblem problem, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(problem);
@@ -157,6 +160,12 @@ public sealed class CpSatTimetableSolver(ILogger<CpSatTimetableSolver> logger) :
         var objective = new List<LinearExpr>();
         objective.AddRange(missing.Values.Select(m => m * UnplacedHourPenalty));
         objective.AddRange(shortfalls.Select(v => v * DailyMinimumShortfallPenalty));
+
+        foreach (var avoided in problem.AvoidedSlots ?? [])
+        {
+            if (busy.GetValueOrDefault((avoided.ResourceKey, avoided.Day, avoided.Period)) is { Count: > 0 } slotVars)
+                objective.Add(LinearExpr.Sum(slotVars) * AvoidedSlotPenalty);
+        }
 
         foreach (var courseKey in problem.Items.Select(i => i.CourseKey).Distinct())
         {
