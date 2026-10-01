@@ -33,7 +33,7 @@
 }
 
 .plan-cell.editable:hover {
-  background: var(--mantine-color-blue-0);
+  background: var(--mantine-color-navy-0);
 }
 
 .lesson-block {
@@ -42,4 +42,103 @@
   border-radius: 4px;
   padding: 4px 6px;
   min-width: 96px;
+}
+
+/* Identidad institucional */
+:root {
+  --app-bg: #f4f6fa;
+  --app-navy: var(--mantine-color-navy-9);
+  --app-gold: var(--mantine-color-gold-6);
+}
+
+body {
+  background: var(--app-bg);
+  color: #1f2937;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--app-navy);
+}
+
+.app-header {
+  background: var(--app-navy);
+  border-bottom: 3px solid var(--app-gold);
+  color: #fff;
+}
+
+.app-header h4,
+.app-header .brand-sub {
+  color: #fff;
+}
+
+.app-header .header-select input {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.app-header .header-select .mantine-Select-section {
+  color: #fff;
+}
+
+.app-header .user-name {
+  color: #fff;
+}
+
+.app-header .user-role {
+  color: var(--mantine-color-navy-2);
+}
+
+.app-navbar {
+  background: #fff;
+}
+
+.nav-caption {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mantine-color-gray-6);
+  padding: 4px 12px;
+}
+
+.app-navbar .mantine-NavLink-root {
+  border-radius: var(--mantine-radius-md);
+  font-weight: 500;
+}
+
+.app-navbar .mantine-NavLink-root[data-active] {
+  background: var(--mantine-color-navy-0);
+  color: var(--mantine-color-navy-9);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--app-gold);
+}
+
+.matrix thead th {
+  background: var(--mantine-color-navy-0);
+  color: var(--mantine-color-navy-9);
+  font-weight: 600;
+}
+
+/* Pantalla de acceso */
+.login-hero {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(176, 141, 60, 0.22), transparent 45%),
+    linear-gradient(160deg, var(--mantine-color-navy-9), var(--mantine-color-navy-8));
+  color: #fff;
+}
+
+.login-hero h1,
+.login-hero h2 {
+  color: #fff;
+}
+
+.login-hero .hero-rule {
+  width: 56px;
+  height: 3px;
+  background: var(--app-gold);
+  border-radius: 2px;
 }

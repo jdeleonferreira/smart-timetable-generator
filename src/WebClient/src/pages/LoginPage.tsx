@@ -1,4 +1,4 @@
-import { Alert, Anchor, Box, Button, Center, Paper, PasswordInput, Stack, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
+import { Alert, Anchor, Box, Button, Center, Flex, Group, Paper, PasswordInput, Stack, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
 import { IconAlertCircle, IconCalendarTime } from '@tabler/icons-react';
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
@@ -38,74 +38,101 @@ export function LoginPage() {
   };
 
   return (
-    <Center mih="100vh" bg="gray.0" p="md">
-      <Box w="100%" maw={420}>
-        <Stack align="center" gap={6} mb="lg">
-          <ThemeIcon size={52} radius="md" variant="filled">
-            <IconCalendarTime size={30} />
+    <Flex mih="100vh">
+      <Stack className="login-hero" justify="space-between" p={56} w="42%" visibleFrom="md">
+        <Group gap="sm">
+          <ThemeIcon size={44} radius="md" color="gold" variant="filled">
+            <IconCalendarTime size={26} />
           </ThemeIcon>
-          <Title order={2}>Horarios escolares</Title>
-          <Text c="dimmed" size="sm">
-            Plan de estudios y horarios de la institución
+          <Text fw={600} size="lg" ff="Georgia, serif">
+            Institución educativa
+          </Text>
+        </Group>
+        <Stack gap="md" maw={420}>
+          <div className="hero-rule" />
+          <Title order={1} fz={38} lh={1.2}>
+            Gestión de horarios escolares
+          </Title>
+          <Text c="navy.1" size="md" lh={1.6}>
+            Planifica el plan de estudios, genera los horarios de cada curso y consulta la carga de cada docente en un solo lugar.
           </Text>
         </Stack>
+        <Text size="xs" c="navy.2">
+          © {new Date().getFullYear()} Horarios escolares
+        </Text>
+      </Stack>
 
-        <Paper withBorder shadow="sm" p="xl">
-          <form onSubmit={submit}>
-            <Stack>
-              {error && (
-                <Alert color="red" icon={<IconAlertCircle size={18} />} role="alert">
-                  {error}
-                </Alert>
-              )}
-              <TextInput
-                label="Correo"
-                placeholder="usuario@colegio.edu.co"
-                type="email"
-                autoComplete="username"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.currentTarget.value)}
-              />
-              <PasswordInput
-                label="Contraseña"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.currentTarget.value)}
-              />
-              <Button type="submit" loading={submitting} fullWidth mt="xs">
-                Ingresar
-              </Button>
-            </Stack>
-          </form>
-        </Paper>
-
-        {import.meta.env.DEV && (
-          <Paper withBorder p="sm" mt="md" bg="blue.0">
-            <Text size="xs" fw={600} mb={4}>
-              Usuarios de ejemplo (desarrollo)
+      <Center flex={1} bg="gray.0" p="md">
+        <Box w="100%" maw={400}>
+          <Stack align="center" gap={6} mb="lg" hiddenFrom="md">
+            <ThemeIcon size={52} radius="md" variant="filled">
+              <IconCalendarTime size={30} />
+            </ThemeIcon>
+          </Stack>
+          <Stack gap={4} mb="lg">
+            <Title order={2}>Horarios escolares</Title>
+            <Text c="dimmed" size="sm">
+              Inicia sesión con tu cuenta institucional
             </Text>
-            <Stack gap={2}>
-              {SAMPLE_USERS.map((u) => (
-                <Anchor
-                  key={u.email}
-                  size="xs"
-                  component="button"
-                  type="button"
-                  ta="left"
-                  onClick={() => {
-                    setEmail(u.email);
-                    setPassword(u.password);
-                  }}
-                >
-                  {u.label}: {u.email} / {u.password}
-                </Anchor>
-              ))}
-            </Stack>
+          </Stack>
+
+          <Paper withBorder shadow="sm" p="xl">
+            <form onSubmit={submit}>
+              <Stack>
+                {error && (
+                  <Alert color="red" icon={<IconAlertCircle size={18} />} role="alert">
+                    {error}
+                  </Alert>
+                )}
+                <TextInput
+                  label="Correo"
+                  placeholder="usuario@colegio.edu.co"
+                  type="email"
+                  autoComplete="username"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.currentTarget.value)}
+                />
+                <PasswordInput
+                  label="Contraseña"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.currentTarget.value)}
+                />
+                <Button type="submit" loading={submitting} fullWidth mt="xs" size="md">
+                  Ingresar
+                </Button>
+              </Stack>
+            </form>
           </Paper>
-        )}
-      </Box>
-    </Center>
+
+          {import.meta.env.DEV && (
+            <Paper withBorder p="sm" mt="md" bg="navy.0">
+              <Text size="xs" fw={600} mb={4}>
+                Usuarios de ejemplo (desarrollo)
+              </Text>
+              <Stack gap={2}>
+                {SAMPLE_USERS.map((u) => (
+                  <Anchor
+                    key={u.email}
+                    size="xs"
+                    component="button"
+                    type="button"
+                    ta="left"
+                    onClick={() => {
+                      setEmail(u.email);
+                      setPassword(u.password);
+                    }}
+                  >
+                    {u.label}: {u.email} / {u.password}
+                  </Anchor>
+                ))}
+              </Stack>
+            </Paper>
+          )}
+        </Box>
+      </Center>
+    </Flex>
   );
 }

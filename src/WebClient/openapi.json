@@ -116,9 +116,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -128,6 +125,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error",
@@ -163,11 +163,8 @@
               }
             }
           },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -176,8 +173,11 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -225,16 +225,6 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -247,6 +237,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -289,25 +289,12 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -322,8 +309,21 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found"
+          },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -366,9 +366,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -379,8 +376,8 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -389,8 +386,11 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -650,8 +650,8 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -660,8 +660,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -705,9 +705,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -718,8 +715,11 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -728,8 +728,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -790,16 +790,6 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -812,6 +802,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -864,9 +864,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -877,8 +874,11 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -887,8 +887,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -973,8 +973,8 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -983,8 +983,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1028,15 +1028,25 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1050,9 +1060,266 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/teachers": {
+      "post": {
+        "tags": [
+          "teachers"
+        ],
+        "summary": "Registra un docente con sus áreas, sedes y carga máxima",
+        "operationId": "CreateTeacher",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTeacherCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedIdDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/teachers/{teacherId}": {
+      "put": {
+        "tags": [
+          "teachers"
+        ],
+        "summary": "Cambia un docente; isActive = false lo desactiva (no se borran)",
+        "operationId": "UpdateTeacher",
+        "parameters": [
+          {
+            "name": "teacherId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTeacherCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/teaching-assignments": {
+      "get": {
+        "tags": [
+          "teaching-assignments"
+        ],
+        "summary": "Docente de cada asignatura por curso, para una sede y año lectivo",
+        "operationId": "GetTeachingAssignments",
+        "parameters": [
+          {
+            "name": "academicYearId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "campusId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeachingAssignmentDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/teaching-assignments/courses/{courseId}/subjects/{subjectId}": {
+      "put": {
+        "tags": [
+          "teaching-assignments"
+        ],
+        "summary": "Fija el docente de una asignatura en un curso (teacherId nulo lo libera) y actualiza los horarios en borrador",
+        "operationId": "SetTeachingAssignment",
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTeachingAssignmentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetTeachingAssignmentResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1155,16 +1422,6 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1177,6 +1434,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1263,9 +1530,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1276,8 +1540,11 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1286,8 +1553,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1321,9 +1588,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1334,8 +1598,11 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1344,8 +1611,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1379,9 +1646,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1391,6 +1655,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error",
@@ -1454,16 +1721,6 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1476,6 +1733,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1528,9 +1795,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1541,8 +1805,11 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1551,8 +1818,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1596,8 +1863,8 @@
           "404": {
             "description": "Not Found"
           },
-          "500": {
-            "description": "Internal Server Error",
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1606,8 +1873,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1660,9 +1927,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1673,8 +1937,11 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1683,8 +1950,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1746,9 +2013,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1759,8 +2023,11 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1769,8 +2036,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1982,9 +2249,6 @@
           "204": {
             "description": "No Content"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1994,6 +2258,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error",
@@ -2526,6 +2793,76 @@
           }
         }
       },
+      "CreateTeacherCommand": {
+        "required": [
+          "firstName",
+          "lastName",
+          "maxWeeklyHours",
+          "areaIds",
+          "campusIds"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "maxWeeklyHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "areaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "campusIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maxDailyHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maxGapsPerDay": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "CreateTimetableCommand": {
         "required": [
           "academicYearId",
@@ -3013,6 +3350,46 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "SetTeachingAssignmentBody": {
+        "required": [
+          "teacherId"
+        ],
+        "type": "object",
+        "properties": {
+          "teacherId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "SetTeachingAssignmentResult": {
+        "required": [
+          "updatedLessons",
+          "conflictingLessons"
+        ],
+        "type": "object",
+        "properties": {
+          "updatedLessons": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "conflictingLessons": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
               "integer",
               "string"
             ],
@@ -3574,7 +3951,13 @@
           "maxWeeklyHours",
           "maxDailyHours",
           "areas",
-          "isActive"
+          "isActive",
+          "firstName",
+          "lastName",
+          "phone",
+          "maxGapsPerDay",
+          "areaIds",
+          "campusIds"
         ],
         "type": "object",
         "properties": {
@@ -3615,6 +3998,70 @@
             }
           },
           "isActive": {
+            "type": "boolean"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maxGapsPerDay": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "areaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "campusIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "TeachingAssignmentDto": {
+        "required": [
+          "courseId",
+          "subjectId",
+          "teacherId",
+          "isManual"
+        ],
+        "type": "object",
+        "properties": {
+          "courseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "teacherId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "isManual": {
             "type": "boolean"
           }
         }
@@ -3808,6 +4255,80 @@
           }
         }
       },
+      "UpdateTeacherCommand": {
+        "required": [
+          "firstName",
+          "lastName",
+          "maxWeeklyHours",
+          "areaIds",
+          "campusIds"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "maxWeeklyHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "areaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "campusIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maxDailyHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maxGapsPerDay": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
       "UpdateUserCommand": {
         "required": [
           "email",
@@ -3918,6 +4439,12 @@
     },
     {
       "name": "grades"
+    },
+    {
+      "name": "teachers"
+    },
+    {
+      "name": "teaching-assignments"
     },
     {
       "name": "study-plans"

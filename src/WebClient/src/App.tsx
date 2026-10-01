@@ -4,8 +4,11 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation } fr
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { AppLayout } from './components/AppLayout';
 import { SchoolProvider } from './context/SchoolContext';
+import { AssignmentsPage } from './pages/AssignmentsPage';
 import { LoginPage } from './pages/LoginPage';
 import { StudyPlanPage } from './pages/StudyPlanPage';
+import { SubjectsPage } from './pages/SubjectsPage';
+import { TeachersPage } from './pages/TeachersPage';
 import { TimetablePage } from './pages/TimetablePage';
 import { TimetablesPage } from './pages/TimetablesPage';
 import { UsersPage } from './pages/UsersPage';
@@ -53,6 +56,23 @@ const router = createBrowserRouter([
           { path: '/plan', element: <StudyPlanPage /> },
           { path: '/horarios', element: <TimetablesPage /> },
           { path: '/horarios/:timetableId', element: <TimetablePage /> },
+          { path: '/asignacion', element: <AssignmentsPage /> },
+          {
+            path: '/materias',
+            element: (
+              <RequireAdmin>
+                <SubjectsPage />
+              </RequireAdmin>
+            )
+          },
+          {
+            path: '/docentes',
+            element: (
+              <RequireAdmin>
+                <TeachersPage />
+              </RequireAdmin>
+            )
+          },
           {
             path: '/usuarios',
             element: (

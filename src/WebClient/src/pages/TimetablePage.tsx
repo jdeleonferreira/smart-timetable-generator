@@ -132,7 +132,7 @@ export function TimetablePage() {
 
       {jobId && job.data && (
         <Alert
-          color={running ? 'blue' : job.data.status === 'Succeeded' ? 'green' : job.data.status === 'PartiallySucceeded' ? 'yellow' : 'red'}
+          color={running ? 'navy' : job.data.status === 'Succeeded' ? 'green' : job.data.status === 'PartiallySucceeded' ? 'yellow' : 'red'}
           icon={running ? <Loader size={18} /> : <IconSparkles size={18} />}
           title={JOB_STATUS_LABELS[job.data.status ?? ''] ?? job.data.status}
           withCloseButton={!running}

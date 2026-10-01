@@ -10,7 +10,7 @@ import { useSchool } from '../context/SchoolContext';
 import { errorMessage } from '../lib/errors';
 import { ROLE_LABELS } from '../lib/labels';
 
-const ROLE_COLORS: Record<string, string> = { Admin: 'red', Coordinador: 'blue', Docente: 'teal' };
+const ROLE_COLORS: Record<string, string> = { Admin: 'red', Coordinador: 'navy', Docente: 'teal' };
 
 export function UsersPage() {
   const { user: me } = useAuth();

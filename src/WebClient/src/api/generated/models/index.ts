@@ -329,6 +329,15 @@ export function createCreateStudyPlanCommandFromDiscriminatorValue(parseNode: Pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateTeacherCommand}
+ */
+// @ts-ignore
+export function createCreateTeacherCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateTeacherCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateTimetableCommand}
  */
 // @ts-ignore
@@ -476,6 +485,24 @@ export function createSetStudyPlanItemPeriodHoursCommandFromDiscriminatorValue(p
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SetTeachingAssignmentBody}
+ */
+// @ts-ignore
+export function createSetTeachingAssignmentBodyFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSetTeachingAssignmentBody;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SetTeachingAssignmentResult}
+ */
+// @ts-ignore
+export function createSetTeachingAssignmentResultFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSetTeachingAssignmentResult;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {ShiftDto}
  */
 // @ts-ignore
@@ -599,6 +626,44 @@ export function createStudyPlanSummaryDtoFromDiscriminatorValue(parseNode: Parse
 export function createSubjectDtoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSubjectDto;
 }
+export interface CreateTeacherCommand extends AdditionalDataHolder, Parsable {
+    /**
+     * The areaIds property
+     */
+    areaIds?: Guid[] | null;
+    /**
+     * The campusIds property
+     */
+    campusIds?: Guid[] | null;
+    /**
+     * The email property
+     */
+    email?: string | null;
+    /**
+     * The firstName property
+     */
+    firstName?: string | null;
+    /**
+     * The lastName property
+     */
+    lastName?: string | null;
+    /**
+     * The maxDailyHours property
+     */
+    maxDailyHours?: number | null;
+    /**
+     * The maxGapsPerDay property
+     */
+    maxGapsPerDay?: number | null;
+    /**
+     * The maxWeeklyHours property
+     */
+    maxWeeklyHours?: number | null;
+    /**
+     * The phone property
+     */
+    phone?: string | null;
+}
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
@@ -607,6 +672,15 @@ export function createSubjectDtoFromDiscriminatorValue(parseNode: ParseNode | un
 // @ts-ignore
 export function createTeacherDtoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoTeacherDto;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeachingAssignmentDto}
+ */
+// @ts-ignore
+export function createTeachingAssignmentDtoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeachingAssignmentDto;
 }
 export interface CreateTimetableCommand extends AdditionalDataHolder, Parsable {
     /**
@@ -679,6 +753,15 @@ export function createUpdateStudyPlanItemCommandFromDiscriminatorValue(parseNode
 // @ts-ignore
 export function createUpdateSubjectCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateSubjectCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateTeacherCommand}
+ */
+// @ts-ignore
+export function createUpdateTeacherCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateTeacherCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -922,6 +1005,25 @@ export function deserializeIntoCreateStudyPlanCommand(createStudyPlanCommand: Pa
 }
 /**
  * The deserialization information for the current model
+ * @param CreateTeacherCommand The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateTeacherCommand(createTeacherCommand: Partial<CreateTeacherCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "areaIds": n => { createTeacherCommand.areaIds = n.getCollectionOfPrimitiveValues<Guid>("string"); },
+        "campusIds": n => { createTeacherCommand.campusIds = n.getCollectionOfPrimitiveValues<Guid>("string"); },
+        "email": n => { createTeacherCommand.email = n.getStringValue(); },
+        "firstName": n => { createTeacherCommand.firstName = n.getStringValue(); },
+        "lastName": n => { createTeacherCommand.lastName = n.getStringValue(); },
+        "maxDailyHours": n => { createTeacherCommand.maxDailyHours = n.getNumberValue(); },
+        "maxGapsPerDay": n => { createTeacherCommand.maxGapsPerDay = n.getNumberValue(); },
+        "maxWeeklyHours": n => { createTeacherCommand.maxWeeklyHours = n.getNumberValue(); },
+        "phone": n => { createTeacherCommand.phone = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
  * @param CreateTimetableCommand The instance to deserialize into.
  * @returns {Record<string, (node: ParseNode) => void>}
  */
@@ -1110,6 +1212,29 @@ export function deserializeIntoSetStudyPlanItemDistributionCommand(setStudyPlanI
 export function deserializeIntoSetStudyPlanItemPeriodHoursCommand(setStudyPlanItemPeriodHoursCommand: Partial<SetStudyPlanItemPeriodHoursCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "weeklyHours": n => { setStudyPlanItemPeriodHoursCommand.weeklyHours = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @param SetTeachingAssignmentBody The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSetTeachingAssignmentBody(setTeachingAssignmentBody: Partial<SetTeachingAssignmentBody> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "teacherId": n => { setTeachingAssignmentBody.teacherId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @param SetTeachingAssignmentResult The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSetTeachingAssignmentResult(setTeachingAssignmentResult: Partial<SetTeachingAssignmentResult> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "conflictingLessons": n => { setTeachingAssignmentResult.conflictingLessons = n.getNumberValue(); },
+        "updatedLessons": n => { setTeachingAssignmentResult.updatedLessons = n.getNumberValue(); },
     }
 }
 /**
@@ -1310,13 +1435,33 @@ export function deserializeIntoSubjectDto(subjectDto: Partial<SubjectDto> | unde
 // @ts-ignore
 export function deserializeIntoTeacherDto(teacherDto: Partial<TeacherDto> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "areaIds": n => { teacherDto.areaIds = n.getCollectionOfPrimitiveValues<Guid>("string"); },
         "areas": n => { teacherDto.areas = n.getCollectionOfPrimitiveValues<string>("string"); },
+        "campusIds": n => { teacherDto.campusIds = n.getCollectionOfPrimitiveValues<Guid>("string"); },
         "email": n => { teacherDto.email = n.getStringValue(); },
+        "firstName": n => { teacherDto.firstName = n.getStringValue(); },
         "fullName": n => { teacherDto.fullName = n.getStringValue(); },
         "id": n => { teacherDto.id = n.getGuidValue(); },
         "isActive": n => { teacherDto.isActive = n.getBooleanValue(); },
+        "lastName": n => { teacherDto.lastName = n.getStringValue(); },
         "maxDailyHours": n => { teacherDto.maxDailyHours = n.getNumberValue(); },
+        "maxGapsPerDay": n => { teacherDto.maxGapsPerDay = n.getNumberValue(); },
         "maxWeeklyHours": n => { teacherDto.maxWeeklyHours = n.getNumberValue(); },
+        "phone": n => { teacherDto.phone = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @param TeachingAssignmentDto The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTeachingAssignmentDto(teachingAssignmentDto: Partial<TeachingAssignmentDto> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "courseId": n => { teachingAssignmentDto.courseId = n.getGuidValue(); },
+        "isManual": n => { teachingAssignmentDto.isManual = n.getBooleanValue(); },
+        "subjectId": n => { teachingAssignmentDto.subjectId = n.getGuidValue(); },
+        "teacherId": n => { teachingAssignmentDto.teacherId = n.getGuidValue(); },
     }
 }
 /**
@@ -1402,6 +1547,26 @@ export function deserializeIntoUpdateSubjectCommand(updateSubjectCommand: Partia
         "isActive": n => { updateSubjectCommand.isActive = n.getBooleanValue() ?? true; },
         "name": n => { updateSubjectCommand.name = n.getStringValue(); },
         "order": n => { updateSubjectCommand.order = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @param UpdateTeacherCommand The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateTeacherCommand(updateTeacherCommand: Partial<UpdateTeacherCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "areaIds": n => { updateTeacherCommand.areaIds = n.getCollectionOfPrimitiveValues<Guid>("string"); },
+        "campusIds": n => { updateTeacherCommand.campusIds = n.getCollectionOfPrimitiveValues<Guid>("string"); },
+        "email": n => { updateTeacherCommand.email = n.getStringValue(); },
+        "firstName": n => { updateTeacherCommand.firstName = n.getStringValue(); },
+        "isActive": n => { updateTeacherCommand.isActive = n.getBooleanValue() ?? true; },
+        "lastName": n => { updateTeacherCommand.lastName = n.getStringValue(); },
+        "maxDailyHours": n => { updateTeacherCommand.maxDailyHours = n.getNumberValue(); },
+        "maxGapsPerDay": n => { updateTeacherCommand.maxGapsPerDay = n.getNumberValue(); },
+        "maxWeeklyHours": n => { updateTeacherCommand.maxWeeklyHours = n.getNumberValue(); },
+        "phone": n => { updateTeacherCommand.phone = n.getStringValue(); },
     }
 }
 /**
@@ -1858,6 +2023,26 @@ export function serializeCreateStudyPlanCommand(writer: SerializationWriter, cre
 }
 /**
  * Serializes information the current object
+ * @param CreateTeacherCommand The instance to serialize from.
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateTeacherCommand(writer: SerializationWriter, createTeacherCommand: Partial<CreateTeacherCommand> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!createTeacherCommand || isSerializingDerivedType) { return; }
+    writer.writeCollectionOfPrimitiveValues<Guid>("areaIds", createTeacherCommand.areaIds);
+    writer.writeCollectionOfPrimitiveValues<Guid>("campusIds", createTeacherCommand.campusIds);
+    writer.writeStringValue("email", createTeacherCommand.email);
+    writer.writeStringValue("firstName", createTeacherCommand.firstName);
+    writer.writeStringValue("lastName", createTeacherCommand.lastName);
+    writer.writeNumberValue("maxDailyHours", createTeacherCommand.maxDailyHours);
+    writer.writeNumberValue("maxGapsPerDay", createTeacherCommand.maxGapsPerDay);
+    writer.writeNumberValue("maxWeeklyHours", createTeacherCommand.maxWeeklyHours);
+    writer.writeStringValue("phone", createTeacherCommand.phone);
+    writer.writeAdditionalData(createTeacherCommand.additionalData);
+}
+/**
+ * Serializes information the current object
  * @param CreateTimetableCommand The instance to serialize from.
  * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
  * @param writer Serialization writer to use to serialize this model
@@ -2060,6 +2245,31 @@ export function serializeSetStudyPlanItemPeriodHoursCommand(writer: Serializatio
     if (!setStudyPlanItemPeriodHoursCommand || isSerializingDerivedType) { return; }
     writer.writeNumberValue("weeklyHours", setStudyPlanItemPeriodHoursCommand.weeklyHours);
     writer.writeAdditionalData(setStudyPlanItemPeriodHoursCommand.additionalData);
+}
+/**
+ * Serializes information the current object
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param SetTeachingAssignmentBody The instance to serialize from.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSetTeachingAssignmentBody(writer: SerializationWriter, setTeachingAssignmentBody: Partial<SetTeachingAssignmentBody> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!setTeachingAssignmentBody || isSerializingDerivedType) { return; }
+    writer.writeGuidValue("teacherId", setTeachingAssignmentBody.teacherId);
+    writer.writeAdditionalData(setTeachingAssignmentBody.additionalData);
+}
+/**
+ * Serializes information the current object
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param SetTeachingAssignmentResult The instance to serialize from.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSetTeachingAssignmentResult(writer: SerializationWriter, setTeachingAssignmentResult: Partial<SetTeachingAssignmentResult> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!setTeachingAssignmentResult || isSerializingDerivedType) { return; }
+    writer.writeNumberValue("conflictingLessons", setTeachingAssignmentResult.conflictingLessons);
+    writer.writeNumberValue("updatedLessons", setTeachingAssignmentResult.updatedLessons);
+    writer.writeAdditionalData(setTeachingAssignmentResult.additionalData);
 }
 /**
  * Serializes information the current object
@@ -2272,14 +2482,35 @@ export function serializeSubjectDto(writer: SerializationWriter, subjectDto: Par
 // @ts-ignore
 export function serializeTeacherDto(writer: SerializationWriter, teacherDto: Partial<TeacherDto> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
     if (!teacherDto || isSerializingDerivedType) { return; }
+    writer.writeCollectionOfPrimitiveValues<Guid>("areaIds", teacherDto.areaIds);
     writer.writeCollectionOfPrimitiveValues<string>("areas", teacherDto.areas);
+    writer.writeCollectionOfPrimitiveValues<Guid>("campusIds", teacherDto.campusIds);
     writer.writeStringValue("email", teacherDto.email);
+    writer.writeStringValue("firstName", teacherDto.firstName);
     writer.writeStringValue("fullName", teacherDto.fullName);
     writer.writeGuidValue("id", teacherDto.id);
     writer.writeBooleanValue("isActive", teacherDto.isActive);
+    writer.writeStringValue("lastName", teacherDto.lastName);
     writer.writeNumberValue("maxDailyHours", teacherDto.maxDailyHours);
+    writer.writeNumberValue("maxGapsPerDay", teacherDto.maxGapsPerDay);
     writer.writeNumberValue("maxWeeklyHours", teacherDto.maxWeeklyHours);
+    writer.writeStringValue("phone", teacherDto.phone);
     writer.writeAdditionalData(teacherDto.additionalData);
+}
+/**
+ * Serializes information the current object
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param TeachingAssignmentDto The instance to serialize from.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTeachingAssignmentDto(writer: SerializationWriter, teachingAssignmentDto: Partial<TeachingAssignmentDto> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!teachingAssignmentDto || isSerializingDerivedType) { return; }
+    writer.writeGuidValue("courseId", teachingAssignmentDto.courseId);
+    writer.writeBooleanValue("isManual", teachingAssignmentDto.isManual);
+    writer.writeGuidValue("subjectId", teachingAssignmentDto.subjectId);
+    writer.writeGuidValue("teacherId", teachingAssignmentDto.teacherId);
+    writer.writeAdditionalData(teachingAssignmentDto.additionalData);
 }
 /**
  * Serializes information the current object
@@ -2375,6 +2606,27 @@ export function serializeUpdateSubjectCommand(writer: SerializationWriter, updat
 /**
  * Serializes information the current object
  * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param UpdateTeacherCommand The instance to serialize from.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateTeacherCommand(writer: SerializationWriter, updateTeacherCommand: Partial<UpdateTeacherCommand> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!updateTeacherCommand || isSerializingDerivedType) { return; }
+    writer.writeCollectionOfPrimitiveValues<Guid>("areaIds", updateTeacherCommand.areaIds);
+    writer.writeCollectionOfPrimitiveValues<Guid>("campusIds", updateTeacherCommand.campusIds);
+    writer.writeStringValue("email", updateTeacherCommand.email);
+    writer.writeStringValue("firstName", updateTeacherCommand.firstName);
+    writer.writeBooleanValue("isActive", updateTeacherCommand.isActive ?? true);
+    writer.writeStringValue("lastName", updateTeacherCommand.lastName);
+    writer.writeNumberValue("maxDailyHours", updateTeacherCommand.maxDailyHours);
+    writer.writeNumberValue("maxGapsPerDay", updateTeacherCommand.maxGapsPerDay);
+    writer.writeNumberValue("maxWeeklyHours", updateTeacherCommand.maxWeeklyHours);
+    writer.writeStringValue("phone", updateTeacherCommand.phone);
+    writer.writeAdditionalData(updateTeacherCommand.additionalData);
+}
+/**
+ * Serializes information the current object
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
  * @param UpdateUserCommand The instance to serialize from.
  * @param writer Serialization writer to use to serialize this model
  */
@@ -2426,6 +2678,22 @@ export interface SetStudyPlanItemPeriodHoursCommand extends AdditionalDataHolder
      * The weeklyHours property
      */
     weeklyHours?: number | null;
+}
+export interface SetTeachingAssignmentBody extends AdditionalDataHolder, Parsable {
+    /**
+     * The teacherId property
+     */
+    teacherId?: Guid | null;
+}
+export interface SetTeachingAssignmentResult extends AdditionalDataHolder, Parsable {
+    /**
+     * The conflictingLessons property
+     */
+    conflictingLessons?: number | null;
+    /**
+     * The updatedLessons property
+     */
+    updatedLessons?: number | null;
 }
 export interface ShiftDto extends AdditionalDataHolder, Parsable {
     /**
@@ -2735,13 +3003,25 @@ export interface SubjectDto extends AdditionalDataHolder, Parsable {
 }
 export interface TeacherDto extends AdditionalDataHolder, Parsable {
     /**
+     * The areaIds property
+     */
+    areaIds?: Guid[] | null;
+    /**
      * The areas property
      */
     areas?: string[] | null;
     /**
+     * The campusIds property
+     */
+    campusIds?: Guid[] | null;
+    /**
      * The email property
      */
     email?: string | null;
+    /**
+     * The firstName property
+     */
+    firstName?: string | null;
     /**
      * The fullName property
      */
@@ -2755,13 +3035,43 @@ export interface TeacherDto extends AdditionalDataHolder, Parsable {
      */
     isActive?: boolean | null;
     /**
+     * The lastName property
+     */
+    lastName?: string | null;
+    /**
      * The maxDailyHours property
      */
     maxDailyHours?: number | null;
     /**
+     * The maxGapsPerDay property
+     */
+    maxGapsPerDay?: number | null;
+    /**
      * The maxWeeklyHours property
      */
     maxWeeklyHours?: number | null;
+    /**
+     * The phone property
+     */
+    phone?: string | null;
+}
+export interface TeachingAssignmentDto extends AdditionalDataHolder, Parsable {
+    /**
+     * The courseId property
+     */
+    courseId?: Guid | null;
+    /**
+     * The isManual property
+     */
+    isManual?: boolean | null;
+    /**
+     * The subjectId property
+     */
+    subjectId?: Guid | null;
+    /**
+     * The teacherId property
+     */
+    teacherId?: Guid | null;
 }
 export interface TimetableSummaryDto extends AdditionalDataHolder, Parsable {
     /**
@@ -2874,6 +3184,48 @@ export interface UpdateSubjectCommand extends AdditionalDataHolder, Parsable {
      * The order property
      */
     order?: number | null;
+}
+export interface UpdateTeacherCommand extends AdditionalDataHolder, Parsable {
+    /**
+     * The areaIds property
+     */
+    areaIds?: Guid[] | null;
+    /**
+     * The campusIds property
+     */
+    campusIds?: Guid[] | null;
+    /**
+     * The email property
+     */
+    email?: string | null;
+    /**
+     * The firstName property
+     */
+    firstName?: string | null;
+    /**
+     * The isActive property
+     */
+    isActive?: boolean | null;
+    /**
+     * The lastName property
+     */
+    lastName?: string | null;
+    /**
+     * The maxDailyHours property
+     */
+    maxDailyHours?: number | null;
+    /**
+     * The maxGapsPerDay property
+     */
+    maxGapsPerDay?: number | null;
+    /**
+     * The maxWeeklyHours property
+     */
+    maxWeeklyHours?: number | null;
+    /**
+     * The phone property
+     */
+    phone?: string | null;
 }
 export interface UpdateUserCommand extends AdditionalDataHolder, Parsable {
     /**
