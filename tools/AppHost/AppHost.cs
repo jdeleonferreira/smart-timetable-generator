@@ -1,4 +1,4 @@
-using AppHost;
+using System.Diagnostics;
 using AppHost.Commands;
 using Azure.Provisioning;
 using Azure.Provisioning.AppService;
@@ -69,18 +69,24 @@ var api = builder
 
 // Cliente web (React + Vite). Vite reenvía /api a la API, así que el navegador no necesita CORS.
 // Solo en ejecución local; Aspire instala los paquetes de npm al arrancar.
-if (!builder.ExecutionContext.IsPublishMode && !NodeCheck.IsAvailable(minimumMajor: 22, out var nodeProblem))
-{
-    // La API y la base de datos siguen funcionando; solo se omite el cliente web.
-    Console.Error.WriteLine($"[AppHost] Se omite el cliente web: {nodeProblem}");
-}
-else if (!builder.ExecutionContext.IsPublishMode)
+if (!builder.ExecutionContext.IsPublishMode)
 {
     builder.AddViteApp("web", "../../src/WebClient")
         .WithReference(api)
         .WaitFor(api)
         .WithEnvironment("API_URL", api.GetEndpoint("https"))
-        .WithExternalHttpEndpoints();
+        .WithExternalHttpEndpoints()
+        // Abre el cliente web en el navegador cuando está listo (en CI no hay navegador que abrir).
+        .OnResourceReady((web, _, _) =>
+        {
+            if (Environment.GetEnvironmentVariable("CI") is null)
+            {
+                var url = web.GetEndpoint("http").Url;
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+
+            return Task.CompletedTask;
+        });
 }
 
 // Configure Application Insights and Log Analytics only if in publish mode
