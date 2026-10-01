@@ -38,6 +38,7 @@ app.UseStaticFiles();
 app.MapAuthEndpoints();
 app.MapCatalogEndpoints();
 app.MapAreaAndGradeEndpoints();
+app.MapTeacherEndpoints();
 app.MapStudyPlanEndpoints();
 app.MapTimetableEndpoints();
 app.UseEventualConsistencyMiddleware();

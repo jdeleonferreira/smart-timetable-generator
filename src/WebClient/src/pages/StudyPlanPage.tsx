@@ -72,7 +72,7 @@ function PlanView({ plan, editable, canManage }: { plan: StudyPlanDto; editable:
   const reopen = useMutation({
     mutationFn: () => api.studyPlans.byStudyPlanId(plan.id!).reopen.post(),
     onSuccess: () => {
-      notifications.show({ color: 'blue', message: 'Plan reabierto para cambios' });
+      notifications.show({ color: 'navy', message: 'Plan reabierto para cambios' });
       refresh();
     },
     onError: (e) => notifications.show({ color: 'red', title: 'No se pudo reabrir', message: errorMessage(e) })

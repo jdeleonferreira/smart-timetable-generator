@@ -166,6 +166,13 @@ internal sealed class TimetableGenerationService(
         var secondsPerShift = Math.Max(MinSecondsPerShift, job.TimeLimitSeconds / Math.Max(1, shiftsWithWork.Count));
         var anyInfeasible = false;
 
+        // Espacios ocupados por franja (incluye clases fijadas): evita que un salón compartido tumbe toda la generación
+        var spaceOccupancy = locked
+            .Where(l => l.SpaceId is not null)
+            .Select(l => (l.ShiftId, l.Day, l.PeriodNumber, l.SpaceId!.Value))
+            .ToHashSet();
+        var sharedSpaceConflicts = 0;
+
         foreach (var shiftId in shiftsWithWork)
         {
             var shift = campus.FindShift(shiftId);
@@ -203,7 +210,14 @@ internal sealed class TimetableGenerationService(
                     continue; // ya está en el horario como clase fijada
 
                 // En contrajornada el salón del curso puede ser de otro curso en esa jornada: se deja sin espacio salvo que haya uno especial
-                var space = w.SpaceId ?? (w.ShiftId == w.Course.ShiftId ? w.Course.HomeRoomId : null);
+                var space = w.EffectiveSpaceId;
+                if (space is { } sid && !spaceOccupancy.Add((shiftId, day, period, sid)))
+                {
+                    // El salón ya lo usa otro curso en esa franja (salón compartido): la clase queda sin espacio asignado
+                    space = null;
+                    sharedSpaceConflicts++;
+                }
+
                 placements.Add(new LessonPlacement(w.Course.Id, w.Item.SubjectId, w.TeacherId, space, shiftId, day, period));
 
                 if (w.TeacherId is { } tid && bell.ClassPeriod(period) is { } block && teacherBusy.TryGetValue(tid, out var busyList))
@@ -216,6 +230,12 @@ internal sealed class TimetableGenerationService(
                 unplacedTotal += hours;
                 report.AppendLine(CultureInfo.InvariantCulture, $"  · Sin ubicar: {CourseName(w.Course)} · {subjectNames[w.Item.SubjectId]}: {hours} h");
             }
+        }
+
+        if (sharedSpaceConflicts > 0)
+        {
+            report.AppendLine(CultureInfo.InvariantCulture,
+                $"- {sharedSpaceConflicts} clases quedaron sin salón porque el salón está asignado a varios cursos en la misma franja. Revise los salones de los cursos.");
         }
 
         if (anyInfeasible)
@@ -250,13 +270,16 @@ internal sealed class TimetableGenerationService(
         static string TeacherKey(TeacherId id) => $"t:{id.Value}";
         static string SpaceKey(SpaceId id) => $"s:{id.Value}";
 
+        // Un salón de curso que además es un espacio especial (p. ej. un laboratorio) debe respetarse como recurso
+        var specialSpaces = shiftWork.Where(w => w.SpaceId is not null).Select(w => w.SpaceId!.Value).ToHashSet();
+
         var items = new List<SchedulingItem>();
         for (var i = 0; i < shiftWork.Count; i++)
         {
             var w = shiftWork[i];
             var resources = new List<string> { CourseKey(w.Course.Id) };
             if (w.TeacherId is { } tid) resources.Add(TeacherKey(tid));
-            if (w.SpaceId is { } sid) resources.Add(SpaceKey(sid));
+            if (w.EffectiveSpaceId is { } sid && specialSpaces.Contains(sid)) resources.Add(SpaceKey(sid));
 
             var maxPerDay = Math.Min(w.Item.MaxHoursPerDay ?? w.Hours, periods);
             var maxConsecutive = Math.Min(w.Item.MaxConsecutiveHours ?? periods, periods);
@@ -483,6 +506,10 @@ internal sealed class TimetableGenerationService(
         public ShiftId ShiftId { get; } = shiftId;
         public TeacherId? TeacherId { get; set; }
         public SpaceId? SpaceId { get; set; }
+
+        /// <summary>Espacio especial requerido o, en su jornada regular, el salón del curso. En contrajornada no hay salón propio.</summary>
+        public SpaceId? EffectiveSpaceId => SpaceId ?? (ShiftId == Course.ShiftId ? Course.HomeRoomId : null);
+
         public TeachingAssignment? Assignment { get; set; }
         public TeachingAssignment? NewAssignment { get; set; }
     }

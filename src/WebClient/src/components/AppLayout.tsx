@@ -1,6 +1,6 @@
 import { AppShell, Avatar, Badge, Burger, Group, Menu, NavLink, Select, Stack, Text, ThemeIcon, Title, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconBook2, IconCalendarTime, IconChevronDown, IconLogout, IconTable, IconUsers } from '@tabler/icons-react';
+import { IconBook2, IconCalendarTime, IconChevronDown, IconLogout, IconSchool, IconTable, IconUserCheck, IconUsers, IconUsersGroup } from '@tabler/icons-react';
 import { NavLink as RouterNavLink, Outlet, useLocation } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -23,8 +23,13 @@ export function AppLayout() {
 
   const links = [
     { to: '/plan', label: 'Plan de estudios', icon: IconBook2 },
-    { to: '/horarios', label: 'Horarios', icon: IconTable },
-    ...(isAdmin ? [{ to: '/usuarios', label: 'Usuarios', icon: IconUsers }] : [])
+    { to: '/asignacion', label: 'Asignación de docentes', icon: IconUserCheck },
+    { to: '/horarios', label: 'Horarios', icon: IconTable }
+  ];
+  const adminLinks = [
+    { to: '/materias', label: 'Materias', icon: IconSchool },
+    { to: '/docentes', label: 'Docentes', icon: IconUsersGroup },
+    { to: '/usuarios', label: 'Usuarios', icon: IconUsers }
   ];
 
   return (
@@ -33,21 +38,27 @@ export function AppLayout() {
       navbar={{ width: 240, breakpoint: 'sm', collapsed: { mobile: !opened } }}
       padding="md"
     >
-      <AppShell.Header>
+      <AppShell.Header className="app-header">
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label="Menú" />
-            <ThemeIcon size={34} radius="md">
-              <IconCalendarTime size={20} />
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" color="white" aria-label="Menú" />
+            <ThemeIcon size={36} radius="md" color="gold" variant="filled">
+              <IconCalendarTime size={21} />
             </ThemeIcon>
-            <Title order={4} visibleFrom="xs">
-              Horarios escolares
-            </Title>
+            <Stack gap={0}>
+              <Title order={4} lh={1.15}>
+                Horarios escolares
+              </Title>
+              <Text size="xs" className="brand-sub" visibleFrom="xs" lh={1.2} opacity={0.75}>
+                Plan de estudios y horarios institucionales
+              </Text>
+            </Stack>
           </Group>
 
           <Group gap="sm" wrap="nowrap">
             <Select
               aria-label="Año lectivo"
+              className="header-select"
               size="xs"
               w={110}
               data={school.years.map((y) => ({ value: y.id ?? '', label: String(y.year) }))}
@@ -58,6 +69,7 @@ export function AppLayout() {
             />
             <Select
               aria-label="Sede"
+              className="header-select"
               size="xs"
               w={170}
               data={school.campuses.map((c) => ({ value: c.id ?? '', label: c.name ?? '' }))}
@@ -70,18 +82,18 @@ export function AppLayout() {
               <Menu.Target>
                 <UnstyledButton aria-label="Usuario">
                   <Group gap={8} wrap="nowrap">
-                    <Avatar color="blue" radius="xl" size={32}>
+                    <Avatar color="gold" variant="filled" radius="xl" size={34}>
                       {initials(user?.fullName)}
                     </Avatar>
                     <Stack gap={0} visibleFrom="md">
-                      <Text size="sm" fw={600} lh={1.2}>
+                      <Text size="sm" fw={600} lh={1.2} className="user-name">
                         {user?.fullName}
                       </Text>
-                      <Text size="xs" c="dimmed" lh={1.2}>
+                      <Text size="xs" lh={1.2} className="user-role">
                         {ROLE_LABELS[user?.role ?? ''] ?? user?.role}
                       </Text>
                     </Stack>
-                    <IconChevronDown size={14} />
+                    <IconChevronDown size={14} color="white" />
                   </Group>
                 </UnstyledButton>
               </Menu.Target>
@@ -96,7 +108,10 @@ export function AppLayout() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="sm">
+      <AppShell.Navbar p="sm" className="app-navbar">
+        <Text className="nav-caption" mt={4} mb={4}>
+          Gestión académica
+        </Text>
         <Stack gap={4}>
           {links.map((link) => (
             <NavLink
@@ -110,6 +125,26 @@ export function AppLayout() {
             />
           ))}
         </Stack>
+        {isAdmin && (
+          <>
+            <Text className="nav-caption" mt="md" mb={4}>
+              Administración
+            </Text>
+            <Stack gap={4}>
+              {adminLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  component={RouterNavLink}
+                  to={link.to}
+                  label={link.label}
+                  leftSection={<link.icon size={18} />}
+                  active={location.pathname.startsWith(link.to)}
+                  onClick={close}
+                />
+              ))}
+            </Stack>
+          </>
+        )}
         <Stack gap={6} mt="auto" hiddenFrom="sm">
           <Select
             label="Año lectivo"
@@ -135,7 +170,7 @@ export function AppLayout() {
         )}
       </AppShell.Navbar>
 
-      <AppShell.Main bg="gray.0">
+      <AppShell.Main style={{ background: 'var(--app-bg)' }}>
         <Outlet />
       </AppShell.Main>
     </AppShell>

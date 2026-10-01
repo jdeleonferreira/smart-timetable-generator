@@ -105,7 +105,7 @@ export function StudyPlanMatrix({ plan, periodId, editable, onCellClick }: Props
             {areas.map((area) => (
               <Fragment key={area.id}>
                 <Table.Tr bg="gray.0">
-                  <Table.Td className="sticky-col" fw={700} c="blue.8" bg="gray.0">
+                  <Table.Td className="sticky-col" fw={700} c="navy.8" bg="gray.0">
                     {area.name}
                   </Table.Td>
                   <Table.Td colSpan={grades.length} bg="gray.0" />
@@ -144,8 +144,8 @@ export function StudyPlanMatrix({ plan, periodId, editable, onCellClick }: Props
             ))}
           </Table.Tbody>
           <Table.Tfoot>
-            <Table.Tr bg="blue.0">
-              <Table.Th className="sticky-col" bg="blue.0">
+            <Table.Tr bg="navy.0">
+              <Table.Th className="sticky-col" bg="navy.0">
                 Total semanal
               </Table.Th>
               {grades.map((g) => (

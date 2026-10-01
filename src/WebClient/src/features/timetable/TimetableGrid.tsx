@@ -61,7 +61,7 @@ export function TimetableGrid({ grid, mode }: { grid: WeekGrid; mode: GridMode }
               <Fragment key={row.key}>
                 {shifts.size > 1 && (index === 0 || grid.rows[index - 1].shiftName !== row.shiftName) && (
                   <Table.Tr bg="gray.0">
-                    <Table.Td colSpan={grid.columns.length + 1} fw={700} c="blue.8">
+                    <Table.Td colSpan={grid.columns.length + 1} fw={700} c="navy.8">
                       Jornada {row.shiftName}
                     </Table.Td>
                   </Table.Tr>

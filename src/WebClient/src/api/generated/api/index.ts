@@ -14,6 +14,10 @@ import { GradesRequestBuilderNavigationMetadata, GradesRequestBuilderRequestsMet
 // @ts-ignore
 import { StudyPlansRequestBuilderNavigationMetadata, StudyPlansRequestBuilderRequestsMetadata, type StudyPlansRequestBuilder } from './studyPlans/index.js';
 // @ts-ignore
+import { TeachersRequestBuilderNavigationMetadata, TeachersRequestBuilderRequestsMetadata, type TeachersRequestBuilder } from './teachers/index.js';
+// @ts-ignore
+import { TeachingAssignmentsRequestBuilderNavigationMetadata, TeachingAssignmentsRequestBuilderRequestsMetadata, type TeachingAssignmentsRequestBuilder } from './teachingAssignments/index.js';
+// @ts-ignore
 import { TimetablesRequestBuilderNavigationMetadata, TimetablesRequestBuilderRequestsMetadata, type TimetablesRequestBuilder } from './timetables/index.js';
 // @ts-ignore
 import { type UsersRequestBuilder, UsersRequestBuilderNavigationMetadata, UsersRequestBuilderRequestsMetadata } from './users/index.js';
@@ -48,6 +52,14 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The studyPlans property
      */
     get studyPlans(): StudyPlansRequestBuilder;
+    /**
+     * The teachers property
+     */
+    get teachers(): TeachersRequestBuilder;
+    /**
+     * The teachingAssignments property
+     */
+    get teachingAssignments(): TeachingAssignmentsRequestBuilder;
     /**
      * The timetables property
      */
@@ -85,6 +97,14 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     studyPlans: {
         requestsMetadata: StudyPlansRequestBuilderRequestsMetadata,
         navigationMetadata: StudyPlansRequestBuilderNavigationMetadata,
+    },
+    teachers: {
+        requestsMetadata: TeachersRequestBuilderRequestsMetadata,
+        navigationMetadata: TeachersRequestBuilderNavigationMetadata,
+    },
+    teachingAssignments: {
+        requestsMetadata: TeachingAssignmentsRequestBuilderRequestsMetadata,
+        navigationMetadata: TeachingAssignmentsRequestBuilderNavigationMetadata,
     },
     timetables: {
         requestsMetadata: TimetablesRequestBuilderRequestsMetadata,
