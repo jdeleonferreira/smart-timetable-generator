@@ -4,7 +4,7 @@
 // @ts-ignore
 import { createCreatedIdDtoFromDiscriminatorValue, createHttpValidationProblemDetailsFromDiscriminatorValue, createProblemDetailsFromDiscriminatorValue, serializeCreatedIdDto, serializeCreateTeacherCommand, type CreatedIdDto, type CreateTeacherCommand, type HttpValidationProblemDetails, type ProblemDetails } from '../../models/index.js';
 // @ts-ignore
-import { type WithTeacherItemRequestBuilder, WithTeacherItemRequestBuilderRequestsMetadata } from './item/index.js';
+import { type WithTeacherItemRequestBuilder, WithTeacherItemRequestBuilderNavigationMetadata, WithTeacherItemRequestBuilderRequestsMetadata } from './item/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -47,6 +47,7 @@ export const TeachersRequestBuilderUriTemplate = "{+baseurl}/api/teachers";
 export const TeachersRequestBuilderNavigationMetadata: Record<Exclude<keyof TeachersRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byTeacherId: {
         requestsMetadata: WithTeacherItemRequestBuilderRequestsMetadata,
+        navigationMetadata: WithTeacherItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["teacherId"],
     },
 };

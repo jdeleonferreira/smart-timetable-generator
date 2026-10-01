@@ -6,6 +6,7 @@ import { AppLayout } from './components/AppLayout';
 import { SchoolProvider } from './context/SchoolContext';
 import { AssignmentsPage } from './pages/AssignmentsPage';
 import { LoginPage } from './pages/LoginPage';
+import { MyAvailabilityPage } from './pages/MyAvailabilityPage';
 import { StudyPlanPage } from './pages/StudyPlanPage';
 import { SubjectsPage } from './pages/SubjectsPage';
 import { TeachersPage } from './pages/TeachersPage';
@@ -30,6 +31,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
 function RequireAdmin({ children }: { children: ReactNode }) {
   const { isAdmin } = useAuth();
   return isAdmin ? children : <Navigate to="/" replace />;
+}
+
+function RequireManager({ children }: { children: ReactNode }) {
+  const { isManager } = useAuth();
+  return isManager ? children : <Navigate to="/" replace />;
 }
 
 function Root() {
@@ -68,11 +74,12 @@ const router = createBrowserRouter([
           {
             path: '/docentes',
             element: (
-              <RequireAdmin>
+              <RequireManager>
                 <TeachersPage />
-              </RequireAdmin>
+              </RequireManager>
             )
           },
+          { path: '/disponibilidad', element: <MyAvailabilityPage /> },
           {
             path: '/usuarios',
             element: (

@@ -1,6 +1,6 @@
 import { AppShell, Avatar, Badge, Burger, Group, Menu, NavLink, Select, Stack, Text, ThemeIcon, Title, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconBook2, IconCalendarTime, IconChevronDown, IconLogout, IconSchool, IconTable, IconUserCheck, IconUsers, IconUsersGroup } from '@tabler/icons-react';
+import { IconBook2, IconCalendarOff, IconCalendarTime, IconChevronDown, IconLogout, IconSchool, IconTable, IconUserCheck, IconUsers, IconUsersGroup } from '@tabler/icons-react';
 import { NavLink as RouterNavLink, Outlet, useLocation } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -17,18 +17,19 @@ function initials(name?: string | null) {
 
 export function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isManager } = useAuth();
   const school = useSchool();
   const location = useLocation();
 
   const links = [
     { to: '/plan', label: 'Plan de estudios', icon: IconBook2 },
     { to: '/asignacion', label: 'Asignación de docentes', icon: IconUserCheck },
+    ...(isManager ? [{ to: '/docentes', label: 'Docentes', icon: IconUsersGroup }] : []),
+    ...(user?.teacherId ? [{ to: '/disponibilidad', label: 'Mi disponibilidad', icon: IconCalendarOff }] : []),
     { to: '/horarios', label: 'Horarios', icon: IconTable }
   ];
   const adminLinks = [
     { to: '/materias', label: 'Materias', icon: IconSchool },
-    { to: '/docentes', label: 'Docentes', icon: IconUsersGroup },
     { to: '/usuarios', label: 'Usuarios', icon: IconUsers }
   ];
 

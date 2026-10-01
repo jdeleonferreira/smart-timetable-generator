@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createHttpValidationProblemDetailsFromDiscriminatorValue, createProblemDetailsFromDiscriminatorValue, serializeUpdateTeacherCommand, type HttpValidationProblemDetails, type ProblemDetails, type UpdateTeacherCommand } from '../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { AvailabilityRequestBuilderRequestsMetadata, type AvailabilityRequestBuilder } from './availability/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/teachers/{teacherId}
  */
 export interface WithTeacherItemRequestBuilder extends BaseRequestBuilder<WithTeacherItemRequestBuilder> {
+    /**
+     * The availability property
+     */
+    get availability(): AvailabilityRequestBuilder;
     /**
      * Cambia un docente; isActive = false lo desactiva (no se borran)
      * @param body The request body
@@ -31,6 +37,14 @@ export interface WithTeacherItemRequestBuilder extends BaseRequestBuilder<WithTe
  * Uri template for the request builder.
  */
 export const WithTeacherItemRequestBuilderUriTemplate = "{+baseurl}/api/teachers/{teacherId}";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const WithTeacherItemRequestBuilderNavigationMetadata: Record<Exclude<keyof WithTeacherItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    availability: {
+        requestsMetadata: AvailabilityRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

@@ -191,7 +191,20 @@ export async function mockApi(page: Page, role: Role, options: { loginFails?: bo
       ] }]);
     if (path === '/api/catalog/campuses')
       return json(route, [
-        { id: IDS.campus, name: 'Sede Principal', shifts: [{ id: IDS.morning, name: 'Mañana', days: 'MondayToFriday', classPeriods: 5 }] },
+        {
+          id: IDS.campus,
+          name: 'Sede Principal',
+          shifts: [
+            {
+              id: IDS.morning,
+              name: 'Mañana',
+              days: 'MondayToFriday',
+              classPeriods: 5,
+              workDays: DAYS,
+              classBlocks: TIMES.map(([start, end], i) => ({ number: i + 1, start, end }))
+            }
+          ]
+        },
         { id: IDS.otherCampus, name: 'Sede Norte', shifts: [] }
       ]);
     if (path === '/api/catalog/courses')
@@ -201,9 +214,17 @@ export async function mockApi(page: Page, role: Role, options: { loginFails?: bo
       ]);
     if (path === '/api/catalog/teachers')
       return json(route, [
-        { id: IDS.teacherAna, fullName: 'Ana Gómez', email: 'ana@colegio.local', maxWeeklyHours: 22, maxDailyHours: 6, areas: ['Matemáticas'], isActive: true },
-        { id: IDS.teacherLuis, fullName: 'Luis Pérez', email: 'luis@colegio.local', maxWeeklyHours: 22, maxDailyHours: 6, areas: ['Humanidades'], isActive: true }
+        {
+          id: IDS.teacherAna, fullName: 'Ana Gómez', firstName: 'Ana', lastName: 'Gómez', email: 'ana@colegio.local', maxWeeklyHours: 22, maxDailyHours: 6,
+          areas: ['Matemáticas'], areaIds: [IDS.math], campusIds: [IDS.campus], isActive: true,
+          availability: [{ day: 'Wednesday', start: '10:30:00', end: '11:15:00', kind: 'Avoid' }]
+        },
+        {
+          id: IDS.teacherLuis, fullName: 'Luis Pérez', firstName: 'Luis', lastName: 'Pérez', email: 'luis@colegio.local', maxWeeklyHours: 22, maxDailyHours: 6,
+          areas: ['Humanidades'], areaIds: [IDS.humanities], campusIds: [IDS.campus], isActive: true, availability: []
+        }
       ]);
+    if (/^\/api\/teachers\/[^/]+\/availability$/.test(path) && method === 'PUT') return route.fulfill({ status: 204 });
     if (path === '/api/study-plans' && method === 'GET') {
       const campusId = url.searchParams.get('campusId');
       return json(route, campusId && campusId !== IDS.campus ? [] : [
