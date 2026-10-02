@@ -1,5 +1,6 @@
 using MediatR;
 using SmartTimetableGenerator.Application.UseCases.Teachers.Commands.CreateTeacher;
+using SmartTimetableGenerator.Application.UseCases.Teachers.Commands.SetTeacherAvailability;
 using SmartTimetableGenerator.Application.UseCases.Teachers.Commands.SetTeachingAssignment;
 using SmartTimetableGenerator.Application.UseCases.Teachers.Commands.UpdateTeacher;
 using SmartTimetableGenerator.Application.UseCases.Teachers.Queries.GetTeachingAssignments;
@@ -39,6 +40,16 @@ public static class TeacherEndpoints
             .WithSummary("Cambia un docente; isActive = false lo desactiva (no se borran)")
             .ProducesPut()
             .ProducesProblem(StatusCodes.Status409Conflict);
+
+        teachers
+            .MapPut("/{teacherId:guid}/availability", async (ISender sender, Guid teacherId, SetTeacherAvailabilityCommand command, CancellationToken ct) =>
+            {
+                var result = await sender.Send(command with { TeacherId = teacherId }, ct);
+                return result.Match(_ => Results.NoContent(), CustomResult.Problem);
+            })
+            .WithName("SetTeacherAvailability")
+            .WithSummary("Reemplaza las franjas en que el docente no puede (Unavailable) o prefiere evitar (Avoid) dictar clase")
+            .ProducesPut();
 
         var assignments = app.MapApiGroup("teaching-assignments");
 

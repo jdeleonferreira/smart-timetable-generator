@@ -1203,6 +1203,64 @@
         }
       }
     },
+    "/api/teachers/{teacherId}/availability": {
+      "put": {
+        "tags": [
+          "teachers"
+        ],
+        "summary": "Reemplaza las franjas en que el docente no puede (Unavailable) o prefiere evitar (Avoid) dictar clase",
+        "operationId": "SetTeacherAvailability",
+        "parameters": [
+          {
+            "name": "teacherId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTeacherAvailabilityCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/teaching-assignments": {
       "get": {
         "tags": [
@@ -2607,6 +2665,38 @@
           }
         }
       },
+      "AvailabilityKind": {
+        "enum": [
+          "Unavailable",
+          "Avoid",
+          "Prefer"
+        ]
+      },
+      "AvailabilityRuleDto": {
+        "required": [
+          "day",
+          "start",
+          "end",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "day": {
+            "$ref": "#/components/schemas/DayOfWeek"
+          },
+          "start": {
+            "type": "string",
+            "format": "time"
+          },
+          "end": {
+            "type": "string",
+            "format": "time"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AvailabilityKind"
+          }
+        }
+      },
       "CampusDto": {
         "required": [
           "id",
@@ -2642,6 +2732,32 @@
           },
           "newPassword": {
             "type": "string"
+          }
+        }
+      },
+      "ClassBlockDto": {
+        "required": [
+          "number",
+          "start",
+          "end"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "start": {
+            "type": "string",
+            "format": "time"
+          },
+          "end": {
+            "type": "string",
+            "format": "time"
           }
         }
       },
@@ -3357,6 +3473,20 @@
           }
         }
       },
+      "SetTeacherAvailabilityCommand": {
+        "required": [
+          "rules"
+        ],
+        "type": "object",
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityRuleDto"
+            }
+          }
+        }
+      },
       "SetTeachingAssignmentBody": {
         "required": [
           "teacherId"
@@ -3402,7 +3532,9 @@
           "id",
           "name",
           "days",
-          "classPeriods"
+          "classPeriods",
+          "workDays",
+          "classBlocks"
         ],
         "type": "object",
         "properties": {
@@ -3423,6 +3555,18 @@
               "string"
             ],
             "format": "int32"
+          },
+          "workDays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayOfWeek"
+            }
+          },
+          "classBlocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassBlockDto"
+            }
           }
         }
       },
@@ -3957,7 +4101,8 @@
           "phone",
           "maxGapsPerDay",
           "areaIds",
-          "campusIds"
+          "campusIds",
+          "availability"
         ],
         "type": "object",
         "properties": {
@@ -4033,6 +4178,12 @@
             "items": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          "availability": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityRuleDto"
             }
           }
         }

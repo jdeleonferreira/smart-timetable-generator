@@ -1,17 +1,21 @@
 import { ActionIcon, Badge, Button, Group, Modal, MultiSelect, NumberInput, Paper, SimpleGrid, Stack, Switch, Table, Text, TextInput, Title, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconEdit, IconPlus, IconUserOff, IconUsers } from '@tabler/icons-react';
+import { IconCalendarOff, IconEdit, IconPlus, IconUserOff, IconUsers } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, type TeacherDto } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { EmptyState, ErrorAlert, Loading } from '../components/PageState';
 import { useSchool } from '../context/SchoolContext';
+import { AvailabilityGrid } from '../features/teachers/AvailabilityGrid';
 
 /** Docentes: datos, áreas que pueden dictar, sedes y carga máxima. */
 export function TeachersPage() {
   const teachers = useQuery({ queryKey: ['teachers'], queryFn: () => api.catalog.teachers.get() });
   const { campuses } = useSchool();
+  const { isAdmin, canManageCampus } = useAuth();
   const [target, setTarget] = useState<{ teacher?: TeacherDto } | null>(null);
+  const [availabilityOf, setAvailabilityOf] = useState<TeacherDto | null>(null);
   const [search, setSearch] = useState('');
 
   if (teachers.isLoading) return <Loading label="Cargando docentes…" />;
@@ -34,9 +38,11 @@ export function TeachersPage() {
             Registre los docentes y las áreas que pueden dictar. Un horario se puede generar sin docentes y asignarlos después.
           </Text>
         </div>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setTarget({})}>
-          Nuevo docente
-        </Button>
+        {isAdmin && (
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setTarget({})}>
+            Nuevo docente
+          </Button>
+        )}
       </Group>
 
       {(teachers.data ?? []).length === 0 ? (
@@ -64,7 +70,7 @@ export function TeachersPage() {
                 <Table.Th>Sedes</Table.Th>
                 <Table.Th w={110}>Carga máx.</Table.Th>
                 <Table.Th w={110}>Estado</Table.Th>
-                <Table.Th w={50} />
+                <Table.Th w={100} />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -102,11 +108,24 @@ export function TeachersPage() {
                     </Badge>
                   </Table.Td>
                   <Table.Td>
-                    <Tooltip label="Editar docente">
-                      <ActionIcon variant="subtle" aria-label={`Editar ${t.fullName}`} onClick={() => setTarget({ teacher: t })}>
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Tooltip>
+                    <Group gap={4} wrap="nowrap">
+                      <Tooltip label="Disponibilidad semanal">
+                        <ActionIcon
+                          variant="subtle"
+                          aria-label={`Disponibilidad de ${t.fullName}`}
+                          onClick={() => setAvailabilityOf(t)}
+                        >
+                          <IconCalendarOff size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                      {isAdmin && (
+                        <Tooltip label="Editar docente">
+                          <ActionIcon variant="subtle" aria-label={`Editar ${t.fullName}`} onClick={() => setTarget({ teacher: t })}>
+                            <IconEdit size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -126,6 +145,15 @@ export function TeachersPage() {
       )}
 
       {target && <TeacherModal teacher={target.teacher} onClose={() => setTarget(null)} />}
+      {availabilityOf && (
+        <Modal opened onClose={() => setAvailabilityOf(null)} title={`Disponibilidad de ${availabilityOf.fullName}`} size="xl">
+          <AvailabilityGrid
+            teacher={teachers.data?.find((t) => t.id === availabilityOf.id) ?? availabilityOf}
+            campuses={campuses}
+            editable={isAdmin || (availabilityOf.campusIds ?? []).some((id) => canManageCampus(id))}
+          />
+        </Modal>
+      )}
     </Stack>
   );
 }

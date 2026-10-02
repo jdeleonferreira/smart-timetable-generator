@@ -136,6 +136,25 @@ export interface AuthTokenDto extends AdditionalDataHolder, Parsable {
      */
     user?: UserDto | null;
 }
+export type AvailabilityKind = (typeof AvailabilityKindObject)[keyof typeof AvailabilityKindObject];
+export interface AvailabilityRuleDto extends AdditionalDataHolder, Parsable {
+    /**
+     * The day property
+     */
+    day?: DayOfWeek | null;
+    /**
+     * The end property
+     */
+    end?: TimeOnly | null;
+    /**
+     * The kind property
+     */
+    kind?: AvailabilityKind | null;
+    /**
+     * The start property
+     */
+    start?: TimeOnly | null;
+}
 export interface CampusDto extends AdditionalDataHolder, Parsable {
     /**
      * The id property
@@ -159,6 +178,20 @@ export interface ChangePasswordCommand extends AdditionalDataHolder, Parsable {
      * The newPassword property
      */
     newPassword?: string | null;
+}
+export interface ClassBlockDto extends AdditionalDataHolder, Parsable {
+    /**
+     * The end property
+     */
+    end?: TimeOnly | null;
+    /**
+     * The number property
+     */
+    number?: number | null;
+    /**
+     * The start property
+     */
+    start?: TimeOnly | null;
 }
 export interface CourseDto extends AdditionalDataHolder, Parsable {
     /**
@@ -257,6 +290,15 @@ export function createAuthTokenDtoFromDiscriminatorValue(parseNode: ParseNode | 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AvailabilityRuleDto}
+ */
+// @ts-ignore
+export function createAvailabilityRuleDtoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAvailabilityRuleDto;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CampusDto}
  */
 // @ts-ignore
@@ -271,6 +313,15 @@ export function createCampusDtoFromDiscriminatorValue(parseNode: ParseNode | und
 // @ts-ignore
 export function createChangePasswordCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoChangePasswordCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ClassBlockDto}
+ */
+// @ts-ignore
+export function createClassBlockDtoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoClassBlockDto;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -481,6 +532,15 @@ export function createSetStudyPlanItemDistributionCommandFromDiscriminatorValue(
 // @ts-ignore
 export function createSetStudyPlanItemPeriodHoursCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSetStudyPlanItemPeriodHoursCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SetTeacherAvailabilityCommand}
+ */
+// @ts-ignore
+export function createSetTeacherAvailabilityCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSetTeacherAvailabilityCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -901,6 +961,20 @@ export function deserializeIntoAuthTokenDto(authTokenDto: Partial<AuthTokenDto> 
 }
 /**
  * The deserialization information for the current model
+ * @param AvailabilityRuleDto The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAvailabilityRuleDto(availabilityRuleDto: Partial<AvailabilityRuleDto> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "day": n => { availabilityRuleDto.day = n.getEnumValue<DayOfWeek>(DayOfWeekObject); },
+        "end": n => { availabilityRuleDto.end = n.getTimeOnlyValue(); },
+        "kind": n => { availabilityRuleDto.kind = n.getEnumValue<AvailabilityKind>(AvailabilityKindObject); },
+        "start": n => { availabilityRuleDto.start = n.getTimeOnlyValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
  * @param CampusDto The instance to deserialize into.
  * @returns {Record<string, (node: ParseNode) => void>}
  */
@@ -922,6 +996,19 @@ export function deserializeIntoChangePasswordCommand(changePasswordCommand: Part
     return {
         "currentPassword": n => { changePasswordCommand.currentPassword = n.getStringValue(); },
         "newPassword": n => { changePasswordCommand.newPassword = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @param ClassBlockDto The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoClassBlockDto(classBlockDto: Partial<ClassBlockDto> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "end": n => { classBlockDto.end = n.getTimeOnlyValue(); },
+        "number": n => { classBlockDto.number = n.getNumberValue(); },
+        "start": n => { classBlockDto.start = n.getTimeOnlyValue(); },
     }
 }
 /**
@@ -1216,6 +1303,17 @@ export function deserializeIntoSetStudyPlanItemPeriodHoursCommand(setStudyPlanIt
 }
 /**
  * The deserialization information for the current model
+ * @param SetTeacherAvailabilityCommand The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSetTeacherAvailabilityCommand(setTeacherAvailabilityCommand: Partial<SetTeacherAvailabilityCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "rules": n => { setTeacherAvailabilityCommand.rules = n.getCollectionOfObjectValues<AvailabilityRuleDto>(createAvailabilityRuleDtoFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
  * @param SetTeachingAssignmentBody The instance to deserialize into.
  * @returns {Record<string, (node: ParseNode) => void>}
  */
@@ -1245,10 +1343,12 @@ export function deserializeIntoSetTeachingAssignmentResult(setTeachingAssignment
 // @ts-ignore
 export function deserializeIntoShiftDto(shiftDto: Partial<ShiftDto> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "classBlocks": n => { shiftDto.classBlocks = n.getCollectionOfObjectValues<ClassBlockDto>(createClassBlockDtoFromDiscriminatorValue); },
         "classPeriods": n => { shiftDto.classPeriods = n.getNumberValue(); },
         "days": n => { shiftDto.days = n.getStringValue(); },
         "id": n => { shiftDto.id = n.getGuidValue(); },
         "name": n => { shiftDto.name = n.getStringValue(); },
+        "workDays": n => { shiftDto.workDays = n.getCollectionOfEnumValues<DayOfWeek>(DayOfWeekObject); },
     }
 }
 /**
@@ -1437,6 +1537,7 @@ export function deserializeIntoTeacherDto(teacherDto: Partial<TeacherDto> | unde
     return {
         "areaIds": n => { teacherDto.areaIds = n.getCollectionOfPrimitiveValues<Guid>("string"); },
         "areas": n => { teacherDto.areas = n.getCollectionOfPrimitiveValues<string>("string"); },
+        "availability": n => { teacherDto.availability = n.getCollectionOfObjectValues<AvailabilityRuleDto>(createAvailabilityRuleDtoFromDiscriminatorValue); },
         "campusIds": n => { teacherDto.campusIds = n.getCollectionOfPrimitiveValues<Guid>("string"); },
         "email": n => { teacherDto.email = n.getStringValue(); },
         "firstName": n => { teacherDto.firstName = n.getStringValue(); },
@@ -1911,6 +2012,21 @@ export function serializeAuthTokenDto(writer: SerializationWriter, authTokenDto:
 }
 /**
  * Serializes information the current object
+ * @param AvailabilityRuleDto The instance to serialize from.
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAvailabilityRuleDto(writer: SerializationWriter, availabilityRuleDto: Partial<AvailabilityRuleDto> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!availabilityRuleDto || isSerializingDerivedType) { return; }
+    writer.writeEnumValue<DayOfWeek>("day", availabilityRuleDto.day);
+    writer.writeTimeOnlyValue("end", availabilityRuleDto.end);
+    writer.writeEnumValue<AvailabilityKind>("kind", availabilityRuleDto.kind);
+    writer.writeTimeOnlyValue("start", availabilityRuleDto.start);
+    writer.writeAdditionalData(availabilityRuleDto.additionalData);
+}
+/**
+ * Serializes information the current object
  * @param CampusDto The instance to serialize from.
  * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
  * @param writer Serialization writer to use to serialize this model
@@ -1935,6 +2051,20 @@ export function serializeChangePasswordCommand(writer: SerializationWriter, chan
     writer.writeStringValue("currentPassword", changePasswordCommand.currentPassword);
     writer.writeStringValue("newPassword", changePasswordCommand.newPassword);
     writer.writeAdditionalData(changePasswordCommand.additionalData);
+}
+/**
+ * Serializes information the current object
+ * @param ClassBlockDto The instance to serialize from.
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeClassBlockDto(writer: SerializationWriter, classBlockDto: Partial<ClassBlockDto> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!classBlockDto || isSerializingDerivedType) { return; }
+    writer.writeTimeOnlyValue("end", classBlockDto.end);
+    writer.writeNumberValue("number", classBlockDto.number);
+    writer.writeTimeOnlyValue("start", classBlockDto.start);
+    writer.writeAdditionalData(classBlockDto.additionalData);
 }
 /**
  * Serializes information the current object
@@ -2249,6 +2379,18 @@ export function serializeSetStudyPlanItemPeriodHoursCommand(writer: Serializatio
 /**
  * Serializes information the current object
  * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param SetTeacherAvailabilityCommand The instance to serialize from.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSetTeacherAvailabilityCommand(writer: SerializationWriter, setTeacherAvailabilityCommand: Partial<SetTeacherAvailabilityCommand> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!setTeacherAvailabilityCommand || isSerializingDerivedType) { return; }
+    writer.writeCollectionOfObjectValues<AvailabilityRuleDto>("rules", setTeacherAvailabilityCommand.rules, serializeAvailabilityRuleDto);
+    writer.writeAdditionalData(setTeacherAvailabilityCommand.additionalData);
+}
+/**
+ * Serializes information the current object
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
  * @param SetTeachingAssignmentBody The instance to serialize from.
  * @param writer Serialization writer to use to serialize this model
  */
@@ -2280,10 +2422,13 @@ export function serializeSetTeachingAssignmentResult(writer: SerializationWriter
 // @ts-ignore
 export function serializeShiftDto(writer: SerializationWriter, shiftDto: Partial<ShiftDto> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
     if (!shiftDto || isSerializingDerivedType) { return; }
+    writer.writeCollectionOfObjectValues<ClassBlockDto>("classBlocks", shiftDto.classBlocks, serializeClassBlockDto);
     writer.writeNumberValue("classPeriods", shiftDto.classPeriods);
     writer.writeStringValue("days", shiftDto.days);
     writer.writeGuidValue("id", shiftDto.id);
     writer.writeStringValue("name", shiftDto.name);
+    if(shiftDto.workDays)
+    writer.writeCollectionOfEnumValues<DayOfWeek>("workDays", shiftDto.workDays);
     writer.writeAdditionalData(shiftDto.additionalData);
 }
 /**
@@ -2484,6 +2629,7 @@ export function serializeTeacherDto(writer: SerializationWriter, teacherDto: Par
     if (!teacherDto || isSerializingDerivedType) { return; }
     writer.writeCollectionOfPrimitiveValues<Guid>("areaIds", teacherDto.areaIds);
     writer.writeCollectionOfPrimitiveValues<string>("areas", teacherDto.areas);
+    writer.writeCollectionOfObjectValues<AvailabilityRuleDto>("availability", teacherDto.availability, serializeAvailabilityRuleDto);
     writer.writeCollectionOfPrimitiveValues<Guid>("campusIds", teacherDto.campusIds);
     writer.writeStringValue("email", teacherDto.email);
     writer.writeStringValue("firstName", teacherDto.firstName);
@@ -2679,6 +2825,12 @@ export interface SetStudyPlanItemPeriodHoursCommand extends AdditionalDataHolder
      */
     weeklyHours?: number | null;
 }
+export interface SetTeacherAvailabilityCommand extends AdditionalDataHolder, Parsable {
+    /**
+     * The rules property
+     */
+    rules?: AvailabilityRuleDto[] | null;
+}
 export interface SetTeachingAssignmentBody extends AdditionalDataHolder, Parsable {
     /**
      * The teacherId property
@@ -2697,6 +2849,10 @@ export interface SetTeachingAssignmentResult extends AdditionalDataHolder, Parsa
 }
 export interface ShiftDto extends AdditionalDataHolder, Parsable {
     /**
+     * The classBlocks property
+     */
+    classBlocks?: ClassBlockDto[] | null;
+    /**
      * The classPeriods property
      */
     classPeriods?: number | null;
@@ -2712,6 +2868,10 @@ export interface ShiftDto extends AdditionalDataHolder, Parsable {
      * The name property
      */
     name?: string | null;
+    /**
+     * The workDays property
+     */
+    workDays?: DayOfWeek[] | null;
 }
 export type SpaceType = (typeof SpaceTypeObject)[keyof typeof SpaceTypeObject];
 export interface StudyPlanAreaDto extends AdditionalDataHolder, Parsable {
@@ -3011,6 +3171,10 @@ export interface TeacherDto extends AdditionalDataHolder, Parsable {
      */
     areas?: string[] | null;
     /**
+     * The availability property
+     */
+    availability?: AvailabilityRuleDto[] | null;
+    /**
      * The campusIds property
      */
     campusIds?: Guid[] | null;
@@ -3283,6 +3447,11 @@ export interface UserDto extends AdditionalDataHolder, Parsable {
      */
     teacherId?: Guid | null;
 }
+export const AvailabilityKindObject = {
+    Unavailable: "Unavailable",
+    Avoid: "Avoid",
+    Prefer: "Prefer",
+} as const;
 export const DayOfWeekObject = {
     Sunday: "Sunday",
     Monday: "Monday",

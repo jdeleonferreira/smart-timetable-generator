@@ -11,7 +11,8 @@ public sealed record SchedulingProblem(
     IReadOnlyList<SchedulingItem> Items,
     IReadOnlyList<BlockedSlot> BlockedSlots,
     IReadOnlyList<DailyLoadRule> DailyLoads,
-    int TimeLimitSeconds);
+    int TimeLimitSeconds,
+    IReadOnlyList<BlockedSlot>? AvoidedSlots = null);
 
 /// <summary>
 /// Una asignatura en un curso con sus horas semanales y los recursos que ocupa.
@@ -28,7 +29,11 @@ public sealed record SchedulingItem(
 
 public readonly record struct SlotRef(int Day, int Period);
 
-/// <summary>Franja en la que un recurso no puede tener clase (disponibilidad del docente, clases en otra sede…).</summary>
+/// <summary>
+/// Franja en la que un recurso no puede tener clase (disponibilidad del docente, clases en otra sede…).
+/// También describe las franjas que un recurso prefiere evitar (<see cref="SchedulingProblem.AvoidedSlots"/>): el motor
+/// las usa solo si no hay otra opción.
+/// </summary>
 public sealed record BlockedSlot(string ResourceKey, int Day, int Period);
 
 /// <summary>

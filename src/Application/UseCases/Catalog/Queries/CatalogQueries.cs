@@ -1,4 +1,8 @@
 using SmartTimetableGenerator.Application.Common.Interfaces;
+using SmartTimetableGenerator.Domain.Campuses;
+using SmartTimetableGenerator.Domain.Common.Calendar;
+using SmartTimetableGenerator.Domain.DayTypes;
+using SmartTimetableGenerator.Domain.Teachers;
 
 namespace SmartTimetableGenerator.Application.UseCases.Catalog.Queries;
 
@@ -29,7 +33,16 @@ public sealed record GetCampusesQuery : IRequest<IReadOnlyList<CampusDto>>;
 
 public sealed record CampusDto(Guid Id, string Name, IReadOnlyList<ShiftDto> Shifts);
 
-public sealed record ShiftDto(Guid Id, string Name, string Days, int ClassPeriods);
+public sealed record ShiftDto(
+    Guid Id,
+    string Name,
+    string Days,
+    int ClassPeriods,
+    IReadOnlyList<DayOfWeek> WorkDays,
+    IReadOnlyList<ClassBlockDto> ClassBlocks);
+
+/// <summary>Hora de clase de la jornada (franja del timbre del tipo de día por defecto).</summary>
+public sealed record ClassBlockDto(int Number, TimeOnly Start, TimeOnly End);
 
 internal sealed class GetCampusesQueryHandler(IApplicationDbContext dbContext)
     : IRequestHandler<GetCampusesQuery, IReadOnlyList<CampusDto>>
@@ -39,13 +52,33 @@ internal sealed class GetCampusesQueryHandler(IApplicationDbContext dbContext)
         var campuses = await dbContext.Campuses.AsNoTracking()
             .Include(c => c.Shifts).ThenInclude(s => s.BellSchedules)
             .ToListAsync(cancellationToken);
+        var defaultDayType = await dbContext.DayTypes.AsNoTracking()
+            .WithSpecification(DayTypeSpec.Default())
+            .FirstOrDefaultAsync(cancellationToken);
 
         return campuses
             .OrderBy(c => c.Name)
             .Select(c => new CampusDto(c.Id.Value, c.Name,
-                c.Shifts.Select(s => new ShiftDto(s.Id.Value, s.Name, s.Days.ToString(),
-                    s.BellSchedules.Select(b => b.ClassPeriodCount).DefaultIfEmpty(0).Max())).ToList()))
+                c.Shifts.Select(s => ToShiftDto(s, defaultDayType?.Id)).ToList()))
             .ToList();
+    }
+
+    private static ShiftDto ToShiftDto(Shift shift, DayTypeId? defaultDayType)
+    {
+        var bell = (defaultDayType is { } id ? shift.FindBellSchedule(id) : null) ?? shift.BellSchedules.FirstOrDefault();
+        var blocks = Enumerable.Range(1, bell?.ClassPeriodCount ?? 0)
+            .Select(n => (Number: n, Block: bell!.ClassPeriod(n)))
+            .Where(x => x.Block is not null)
+            .Select(x => new ClassBlockDto(x.Number, x.Block!.Start, x.Block.End))
+            .ToList();
+
+        // Lunes a domingo, solo los días de la jornada
+        var workDays = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+            .Where(day => shift.Days.Includes(day))
+            .ToList();
+
+        return new ShiftDto(shift.Id.Value, shift.Name, shift.Days.ToString(),
+            shift.BellSchedules.Select(b => b.ClassPeriodCount).DefaultIfEmpty(0).Max(), workDays, blocks);
     }
 }
 
@@ -87,7 +120,11 @@ public sealed record TeacherDto(
     string? Phone,
     int? MaxGapsPerDay,
     IReadOnlyList<Guid> AreaIds,
-    IReadOnlyList<Guid> CampusIds);
+    IReadOnlyList<Guid> CampusIds,
+    IReadOnlyList<AvailabilityRuleDto> Availability);
+
+/// <summary>Franja en la que el docente no puede (Unavailable) o prefiere no dictar clase (Avoid).</summary>
+public sealed record AvailabilityRuleDto(DayOfWeek Day, TimeOnly Start, TimeOnly End, AvailabilityKind Kind);
 
 internal sealed class GetTeachersQueryHandler(IApplicationDbContext dbContext)
     : IRequestHandler<GetTeachersQuery, IReadOnlyList<TeacherDto>>
@@ -102,7 +139,8 @@ internal sealed class GetTeachersQueryHandler(IApplicationDbContext dbContext)
             .Select(t => new TeacherDto(t.Id.Value, t.FullName, t.Email, t.MaxWeeklyHours, t.MaxDailyHours,
                 t.Areas.Select(a => areas.GetValueOrDefault(a.AreaId, "?")).ToList(), t.IsActive,
                 t.FirstName, t.LastName, t.Phone, t.MaxGapsPerDay,
-                t.Areas.Select(a => a.AreaId.Value).ToList(), t.Campuses.Select(c => c.CampusId.Value).ToList()))
+                t.Areas.Select(a => a.AreaId.Value).ToList(), t.Campuses.Select(c => c.CampusId.Value).ToList(),
+                t.Availability.Select(r => new AvailabilityRuleDto(r.Day, r.Start, r.End, r.Kind)).ToList()))
             .ToList();
     }
 }

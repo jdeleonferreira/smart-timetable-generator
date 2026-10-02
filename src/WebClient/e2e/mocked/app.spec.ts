@@ -178,3 +178,60 @@ test('el coordinador no entra a usuarios', async ({ page }) => {
   await page.goto('/usuarios');
   await expect(page).toHaveURL(/\/plan$/);
 });
+
+test('el administrador marca la disponibilidad de un docente con ✕ y ~', async ({ page }) => {
+  const api = await mockApi(page, 'Admin');
+  await signIn(page, 'Admin');
+
+  await page.getByRole('link', { name: 'Docentes', exact: true }).click();
+  await page.getByRole('button', { name: 'Disponibilidad de Ana Gómez' }).click();
+  const modal = page.getByRole('dialog');
+
+  // Lo guardado se muestra: miércoles a la 5ª hora prefiere evitar
+  await expect(modal.getByRole('button', { name: /Miércoles, 10:30 a 11:15: Prefiere evitar/ })).toBeVisible();
+  await expect(modal.getByRole('button', { name: 'Guardar disponibilidad' })).toBeDisabled();
+
+  // ✕ en la primera hora del lunes, y toda la 5ª hora con ✕ desde el encabezado de la fila
+  await modal.getByTestId(`avail-Monday-${IDS.morning}-1`).click();
+  await modal.getByRole('button', { name: 'Marcar toda la 5ª hora' }).click();
+  // ~ el viernes a la 3ª hora
+  await modal.getByText('~  Prefiere evitar').click();
+  await modal.getByTestId(`avail-Friday-${IDS.morning}-3`).click();
+  await expect(modal.getByText('No puede: 6')).toBeVisible();
+  await expect(modal.getByText('Prefiere evitar: 1')).toBeVisible();
+  await page.screenshot({ path: shot('08-disponibilidad') });
+
+  await modal.getByRole('button', { name: 'Guardar disponibilidad' }).click();
+  await expect(page.getByText('Disponibilidad guardada')).toBeVisible();
+
+  const saved = api.requests.find((r) => r.method === 'PUT' && r.path === `/api/teachers/${IDS.teacherAna}/availability`);
+  const rules = (saved?.body as { rules: { day: string; kind: string; start: string; end: string }[] }).rules;
+  expect(rules.map((r) => [r.day, r.kind])).toEqual(
+    expect.arrayContaining([
+      ['Monday', 'Unavailable'],
+      ['Tuesday', 'Unavailable'],
+      ['Wednesday', 'Unavailable'],
+      ['Thursday', 'Unavailable'],
+      ['Friday', 'Unavailable'],
+      ['Friday', 'Avoid']
+    ])
+  );
+  const monday = rules.filter((r) => r.day === 'Monday');
+  expect(monday).toHaveLength(2);
+  expect(monday[0].start).toMatch(/^07:00:00/);
+});
+
+test('el docente marca su propia disponibilidad', async ({ page }) => {
+  const api = await mockApi(page, 'Docente');
+  await signIn(page, 'Docente');
+
+  await expect(page.getByRole('link', { name: 'Docentes', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Mi disponibilidad' }).click();
+  await expect(page.getByRole('heading', { name: 'Mi disponibilidad' })).toBeVisible();
+
+  await page.getByTestId(`avail-Tuesday-${IDS.morning}-2`).click();
+  await page.getByRole('button', { name: 'Guardar disponibilidad' }).click();
+
+  await expect(page.getByText('Disponibilidad guardada')).toBeVisible();
+  expect(api.requests.some((r) => r.method === 'PUT' && r.path === `/api/teachers/${IDS.teacherAna}/availability`)).toBe(true);
+});

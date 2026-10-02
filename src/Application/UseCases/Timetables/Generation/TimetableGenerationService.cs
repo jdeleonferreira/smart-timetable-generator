@@ -311,6 +311,8 @@ internal sealed class TimetableGenerationService(
             if (l.SpaceId is { } s) blocked.Add(new BlockedSlot(SpaceKey(s), d, l.PeriodNumber - 1));
         }
 
+        var avoided = new List<BlockedSlot>();
+
         // Docentes: indisponibilidad declarada y clases en otras sedes/jornadas (por hora real)
         var teacherIds = shiftWork.Where(w => w.TeacherId is not null).Select(w => w.TeacherId!.Value).Distinct();
         foreach (var tid in teacherIds)
@@ -331,6 +333,19 @@ internal sealed class TimetableGenerationService(
                 {
                     if (bell.ClassPeriod(p) is { } block && block.Start < end && start < block.End)
                         blocked.Add(new BlockedSlot(TeacherKey(tid), d, p - 1));
+                }
+            }
+
+            // Franjas que prefiere evitar: preferencia blanda, el motor las usa solo si no hay otra opción
+            foreach (var rule in teacher.Availability.Where(r => r.Kind == AvailabilityKind.Avoid))
+            {
+                var d = IndexOf(days, rule.Day);
+                if (d < 0) continue;
+
+                for (var p = 1; p <= periods; p++)
+                {
+                    if (bell.ClassPeriod(p) is { } block && block.Start < rule.End && rule.Start < block.End)
+                        avoided.Add(new BlockedSlot(TeacherKey(tid), d, p - 1));
                 }
             }
         }
@@ -361,7 +376,7 @@ internal sealed class TimetableGenerationService(
             }
         }
 
-        return new SchedulingProblem(days.Count, periods, items, blocked, dailyLoads, timeLimitSeconds);
+        return new SchedulingProblem(days.Count, periods, items, blocked, dailyLoads, timeLimitSeconds, avoided);
     }
 
     private static void AssignTeachers(

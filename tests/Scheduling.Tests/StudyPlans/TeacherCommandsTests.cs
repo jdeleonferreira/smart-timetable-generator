@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartTimetableGenerator.Application.Common.Security;
 using SmartTimetableGenerator.Application.UseCases.Catalog.Queries;
 using SmartTimetableGenerator.Application.UseCases.Teachers.Commands.CreateTeacher;
+using SmartTimetableGenerator.Application.UseCases.Teachers.Commands.SetTeacherAvailability;
 using SmartTimetableGenerator.Application.UseCases.Teachers.Commands.SetTeachingAssignment;
 using SmartTimetableGenerator.Application.UseCases.Teachers.Commands.UpdateTeacher;
 using SmartTimetableGenerator.Application.UseCases.Teachers.Queries.GetTeachingAssignments;
@@ -97,6 +98,87 @@ public sealed class TeacherCommandsTests : IDisposable
         teacher.MaxWeeklyHours.Should().Be(18);
         teacher.AreaIds.Should().HaveCount(2);
         teacher.IsActive.Should().BeFalse();
+    }
+
+    private static AvailabilityRuleDto Rule(DayOfWeek day, int startHour, int endHour, AvailabilityKind kind = AvailabilityKind.Unavailable) =>
+        new(day, new TimeOnly(startHour, 0), new TimeOnly(endHour, 0), kind);
+
+    [Fact]
+    public async Task GetCampuses_ShouldExposeWorkDaysAndClassBlocksOfEachShift()
+    {
+        var school = await SeedAsync();
+
+        var campuses = await _host.SendAsync(new GetCampusesQuery());
+
+        var morning = campuses.Single(c => c.Id == school.Campus.Id.Value).Shifts.Single(s => s.Id == school.Morning.Id.Value);
+        morning.WorkDays.Should().Equal(DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday);
+        morning.ClassBlocks.Should().HaveCount(TestSchool.MorningPeriods);
+        morning.ClassBlocks[0].Should().Be(new ClassBlockDto(1, new TimeOnly(7, 0), new TimeOnly(7, 50)));
+    }
+
+    [Fact]
+    public async Task SetTeacherAvailability_AsAdmin_ShouldReplaceTheGrid()
+    {
+        var school = await SeedAsync();
+        var teacherId = school.MathTeacher.Id.Value;
+
+        var first = await _host.SendAsync(new SetTeacherAvailabilityCommand(
+            [Rule(DayOfWeek.Monday, 7, 8), Rule(DayOfWeek.Friday, 11, 12, AvailabilityKind.Avoid)]) { TeacherId = teacherId });
+        var second = await _host.SendAsync(new SetTeacherAvailabilityCommand([Rule(DayOfWeek.Tuesday, 7, 8)]) { TeacherId = teacherId });
+
+        first.IsError.Should().BeFalse();
+        second.IsError.Should().BeFalse();
+        var teacher = (await _host.SendAsync(new GetTeachersQuery())).Single(t => t.Id == teacherId);
+        teacher.Availability.Should().Equal(new AvailabilityRuleDto(DayOfWeek.Tuesday, new TimeOnly(7, 0), new TimeOnly(8, 0), AvailabilityKind.Unavailable));
+    }
+
+    [Fact]
+    public async Task SetTeacherAvailability_ByTheTeacherThemselves_ShouldBeAllowed_ButNotForAnotherTeacher()
+    {
+        var school = await SeedAsync();
+        _host.SignInAs(Roles.Teacher, school.Campus.Id, school.MathTeacher.Id);
+
+        var own = await _host.SendAsync(new SetTeacherAvailabilityCommand([Rule(DayOfWeek.Monday, 7, 8)]) { TeacherId = school.MathTeacher.Id.Value });
+        var other = await _host.SendAsync(new SetTeacherAvailabilityCommand([Rule(DayOfWeek.Monday, 7, 8)]) { TeacherId = school.SportsTeacher.Id.Value });
+
+        own.IsError.Should().BeFalse();
+        other.FirstError.Type.Should().Be(ErrorType.Forbidden);
+    }
+
+    [Fact]
+    public async Task SetTeacherAvailability_AsCoordinator_ShouldOnlyWorkForTeachersOfTheirCampus()
+    {
+        var school = await SeedAsync();
+        _host.SignInAs(Roles.Coordinator, school.Campus.Id);
+        var inCampus = await _host.SendAsync(new SetTeacherAvailabilityCommand([Rule(DayOfWeek.Monday, 7, 8)]) { TeacherId = school.MathTeacher.Id.Value });
+
+        _host.SignInAs(Roles.Coordinator, school.OtherCampus.Id);
+        var otherCampus = await _host.SendAsync(new SetTeacherAvailabilityCommand([Rule(DayOfWeek.Monday, 7, 8)]) { TeacherId = school.MathTeacher.Id.Value });
+
+        inCampus.IsError.Should().BeFalse();
+        otherCampus.FirstError.Type.Should().Be(ErrorType.Forbidden);
+    }
+
+    [Fact]
+    public async Task SetTeacherAvailability_WithOverlappingRules_ShouldBeRejected()
+    {
+        var school = await SeedAsync();
+
+        var result = await _host.SendAsync(new SetTeacherAvailabilityCommand([Rule(DayOfWeek.Monday, 7, 9), Rule(DayOfWeek.Monday, 8, 10)])
+            { TeacherId = school.MathTeacher.Id.Value });
+
+        result.FirstError.Should().Be(TeacherErrors.AvailabilityOverlap);
+    }
+
+    [Fact]
+    public async Task SetTeacherAvailability_WithAPreferRule_ShouldFailValidation()
+    {
+        var school = await SeedAsync();
+
+        var result = await _host.SendAsync(new SetTeacherAvailabilityCommand([Rule(DayOfWeek.Monday, 7, 8, AvailabilityKind.Prefer)])
+            { TeacherId = school.MathTeacher.Id.Value });
+
+        result.FirstError.Type.Should().Be(ErrorType.Validation);
     }
 
     [Fact]
