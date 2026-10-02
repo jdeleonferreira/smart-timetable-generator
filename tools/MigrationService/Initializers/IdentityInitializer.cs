@@ -75,7 +75,7 @@ public class IdentityInitializer(
 
         await EnsureSucceededAsync(userManager.CreateAsync(user, password), $"usuario {email}");
         await EnsureSucceededAsync(userManager.AddToRoleAsync(user, role), $"rol de {email}");
-        logger.LogInformation("Usuario {Email} creado con el rol {Role}", email, role);
+        logger.LogInformation("Usuario creado con el rol {Role}", role);
     }
 
     private static async Task EnsureSucceededAsync(Task<IdentityResult> operation, string what)
