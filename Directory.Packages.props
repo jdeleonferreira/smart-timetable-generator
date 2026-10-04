@@ -28,7 +28,7 @@
     <PackageVersion Include="JunitXml.TestLogger" Version="4.1.0" />
     <!-- TODO: Remove when Aspire updates KubernetesClient dependency to fix https://github.com/advisories/GHSA-w7r3-mgwf-4mqq -->
     <PackageVersion Include="KubernetesClient" Version="19.0.2"/>
-    <PackageVersion Include="MediatR" Version="14.1.0"/>
+    <PackageVersion Include="MediatR" Version="14.2.0"/>
     <PackageVersion Include="MediatR.Contracts" Version="2.0.1" />
     <!-- TODO: Remove when Aspire updates StreamJsonRpc's MessagePack dependency to fix https://github.com/advisories/GHSA-hv8m-jj95-wg3x -->
     <PackageVersion Include="MessagePack" Version="2.5.302" />
